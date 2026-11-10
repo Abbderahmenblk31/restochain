@@ -1,8 +1,8 @@
 'use client';
 
 // =============================================================================
-// RestoChain OS - Authentic Commercial Chef-Grade Kitchen Display System (KDS)
-// Stainless Steel Docket Rail, Physical Ticket Clips, Color-Coded Cooking Timers & Service Bell
+// RestoChain OS — Minimalist Luxury Kitchen Display System (KDS)
+// Seamless elevated tickets, quiet harmonious status dots, crystal-clear typography
 // =============================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +12,6 @@ import { soundFx } from '@/lib/utils/audio';
 import {
   IconKitchen,
   IconCheckCircle,
-  IconClock,
 } from '@/components/icons/RestoIcons';
 
 export function KitchenDisplayBoard() {
@@ -20,9 +19,7 @@ export function KitchenDisplayBoard() {
   const { locale, t } = useLanguage();
   const [selectedStation, setSelectedStation] = useState<string>('ALL');
   const [struckItems, setStruckItems] = useState<Record<string, boolean>>({});
-  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Live timer tick every 10 seconds to refresh elapsed minutes
   const [, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick((t) => t + 1), 10000);
@@ -51,21 +48,21 @@ export function KitchenDisplayBoard() {
   const getTimerBadge = (minutes: number) => {
     if (minutes < 10) {
       return {
-        bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-        label: `${minutes} ${t.timerNormal}`,
-        isAlert: false,
+        dot: 'bg-emerald-500',
+        text: 'text-neutral-500 dark:text-neutral-400',
+        label: `${minutes}m`,
       };
     } else if (minutes < 18) {
       return {
-        bg: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-        label: `${minutes} ${t.timerWarning}`,
-        isAlert: false,
+        dot: 'bg-amber-500',
+        text: 'text-amber-600 dark:text-amber-400 font-bold',
+        label: `${minutes}m`,
       };
     } else {
       return {
-        bg: 'bg-rose-500/30 text-rose-300 border-rose-500 animate-pulse font-black',
-        label: `🚨 ${minutes} ${t.timerCritical}`,
-        isAlert: true,
+        dot: 'bg-rose-500 animate-pulse',
+        text: 'text-rose-600 dark:text-rose-400 font-black',
+        label: `${minutes}m`,
       };
     }
   };
@@ -79,34 +76,23 @@ export function KitchenDisplayBoard() {
     updateOrderStatus(orderId, nextStatus);
   };
 
-  const branchName = locale === 'ar' ? activeBranch?.name : activeBranch?.nameFr || activeBranch?.name;
-
   return (
-    <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
-      {/* Heavy-Duty Commercial KDS Rail Bar */}
-      <div className="rounded-2xl kds-rail p-4 text-white border border-slate-700/80 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/30">
-            <IconKitchen className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black tracking-tight uppercase font-mono">
-                {t.kdsTitle}
-              </h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                LINE-01 • EXPEDITE
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-mono">
-              {branchName} • {activeOrders.length} {t.kdsActiveTicketsCount}
-            </p>
-          </div>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white flex items-center gap-2">
+            <span>{t.kdsTitle}</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </h1>
+          <p className="text-xs text-neutral-400 mt-0.5">
+            {activeOrders.length} {t.kdsActiveTicketsCount}
+          </p>
         </div>
 
-        {/* Cook Station Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {/* Quiet Station Tabs */}
+        <div className="flex items-center gap-1 bg-neutral-200/50 dark:bg-white/5 p-1 rounded-xl">
           {[
             { id: 'ALL', label: t.stationAll },
             { id: 'GRILL', label: t.stationGrill },
@@ -120,47 +106,35 @@ export function KitchenDisplayBoard() {
                 soundFx.playClick();
                 setSelectedStation(st.id);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all pos-key shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
                 selectedStation === st.id
-                  ? 'bg-amber-500 text-slate-950 font-black'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                  ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-bold shadow-xs'
+                  : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
               }`}
             >
               {st.label}
             </button>
           ))}
-
-          {/* Service Bell Test Button */}
-          <button
-            onClick={() => soundFx.playKitchenBell()}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-mono font-bold shrink-0 flex items-center gap-1.5"
-            title="Service Bell Chime"
-          >
-            🔔 Ding!
-          </button>
         </div>
       </div>
 
-      {/* 3 Operational KDS Columns with authentic physical ticket styling */}
+      {/* 3 Quiet Operational Columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Column 1: NEW INCOMING (NEW TICKETS) */}
+        {/* Column 1: NEW */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
-              <h2 className="text-xs font-black uppercase font-mono tracking-wider">
-                {t.colNew}
-              </h2>
-            </div>
-            <span className="px-2 py-0.5 rounded text-xs font-mono font-black bg-blue-500/20 text-blue-300">
+          <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-white/5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              {t.colNew}
+            </h2>
+            <span className="font-mono text-xs text-neutral-400">
               {activeOrders.filter((o) => o.status === 'NEW').length}
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {activeOrders.filter((o) => o.status === 'NEW').length === 0 ? (
-              <div className="p-8 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 text-slate-400 text-xs font-mono">
+              <div className="py-12 text-center text-xs text-neutral-400">
                 {t.noNewOrders}
               </div>
             ) : (
@@ -172,67 +146,48 @@ export function KitchenDisplayBoard() {
                   return (
                     <div
                       key={order.id}
-                      className="relative bg-white dark:bg-[#151a26] text-slate-900 dark:text-slate-100 rounded-2xl border-2 border-blue-500 shadow-xl overflow-hidden"
+                      className="quiet-card rounded-2xl p-4 space-y-3"
                     >
-                      {/* Metal clip simulation */}
-                      <div className="w-8 h-2.5 bg-slate-400 dark:bg-slate-600 rounded-b-md mx-auto shadow-xs"></div>
-
-                      <div className="p-4 space-y-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between border-b border-dashed border-slate-200 dark:border-slate-800 pb-2">
-                          <div>
-                            <span className="text-lg font-black font-mono tracking-tight text-blue-600 dark:text-blue-400">
-                              {order.ticketNumber}
-                            </span>
-                            <span className="text-xs text-slate-500 font-mono block">
-                              {order.type === 'DINE_IN' ? `Table ${order.tableNumber}` : t.takeaway}
-                            </span>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono border font-bold ${timer.bg}`}>
-                            {timer.label}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-sm font-bold font-mono text-neutral-900 dark:text-white">
+                            {order.ticketNumber}
+                          </span>
+                          <span className="text-xs text-neutral-400 block">
+                            {order.type === 'DINE_IN' ? `Table ${order.tableNumber}` : t.takeaway}
                           </span>
                         </div>
-
-                        {/* Items */}
-                        <div className="space-y-2">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-start text-xs">
-                              <div>
-                                <span className="font-bold text-slate-900 dark:text-white">
-                                  {item.name}
-                                </span>
-                                {item.selectedVariant && (
-                                  <span className="text-[10px] text-slate-400 block ps-2 font-mono">
-                                    • {item.selectedVariant.name}
-                                  </span>
-                                )}
-                                {item.selectedModifiers && item.selectedModifiers.length > 0 && (
-                                  <span className="text-[10px] text-amber-500 block ps-2 font-mono">
-                                    + {item.selectedModifiers.map(m => m.name).join(', ')}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="font-mono font-black text-sm bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                                x{item.quantity}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {order.customerNotes && (
-                          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-600 dark:text-amber-400 font-bold font-mono">
-                            ⚠️ {order.customerNotes}
-                          </div>
-                        )}
-
-                        {/* Action */}
-                        <button
-                          onClick={() => handleAdvanceStatus(order.id, 'PREPARING')}
-                          className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs font-mono shadow-md transition-all pos-key"
-                        >
-                          {t.startCookingBtn}
-                        </button>
+                        <span className={`text-xs font-mono flex items-center gap-1.5 ${timer.text}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${timer.dot}`}></span>
+                          {timer.label}
+                        </span>
                       </div>
+
+                      <div className="space-y-1.5 py-1">
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-start text-xs">
+                            <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                              {item.name}
+                            </span>
+                            <span className="font-mono text-neutral-400">
+                              x{item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {order.customerNotes && (
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 italic">
+                          {order.customerNotes}
+                        </p>
+                      )}
+
+                      <button
+                        onClick={() => handleAdvanceStatus(order.id, 'PREPARING')}
+                        className="w-full py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 font-semibold text-xs"
+                      >
+                        {t.startCookingBtn}
+                      </button>
                     </div>
                   );
                 })
@@ -240,23 +195,20 @@ export function KitchenDisplayBoard() {
           </div>
         </div>
 
-        {/* Column 2: ON THE LINE (PREPARING) */}
+        {/* Column 2: PREPARING */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
-              <h2 className="text-xs font-black uppercase font-mono tracking-wider">
-                {t.colPreparing}
-              </h2>
-            </div>
-            <span className="px-2 py-0.5 rounded text-xs font-mono font-black bg-amber-500/20 text-amber-300">
+          <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-white/5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              {t.colPreparing}
+            </h2>
+            <span className="font-mono text-xs text-neutral-400">
               {activeOrders.filter((o) => o.status === 'PREPARING').length}
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {activeOrders.filter((o) => o.status === 'PREPARING').length === 0 ? (
-              <div className="p-8 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 text-slate-400 text-xs font-mono">
+              <div className="py-12 text-center text-xs text-neutral-400">
                 {t.noPrepOrders}
               </div>
             ) : (
@@ -268,80 +220,57 @@ export function KitchenDisplayBoard() {
                   return (
                     <div
                       key={order.id}
-                      className={`relative bg-white dark:bg-[#151a26] text-slate-900 dark:text-slate-100 rounded-2xl border-2 shadow-xl overflow-hidden ${
-                        timer.isAlert ? 'border-rose-500 ring-2 ring-rose-500/30' : 'border-amber-500'
-                      }`}
+                      className="quiet-card rounded-2xl p-4 space-y-3"
                     >
-                      {/* Metal clip simulation */}
-                      <div className="w-8 h-2.5 bg-amber-500 rounded-b-md mx-auto shadow-xs"></div>
-
-                      <div className="p-4 space-y-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between border-b border-dashed border-slate-200 dark:border-slate-800 pb-2">
-                          <div>
-                            <span className="text-lg font-black font-mono tracking-tight text-amber-500">
-                              {order.ticketNumber}
-                            </span>
-                            <span className="text-xs text-slate-500 font-mono block">
-                              {order.type === 'DINE_IN' ? `Table ${order.tableNumber}` : t.takeaway}
-                            </span>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono border font-bold ${timer.bg}`}>
-                            {timer.label}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-sm font-bold font-mono text-neutral-900 dark:text-white">
+                            {order.ticketNumber}
+                          </span>
+                          <span className="text-xs text-neutral-400 block">
+                            {order.type === 'DINE_IN' ? `Table ${order.tableNumber}` : t.takeaway}
                           </span>
                         </div>
-
-                        {/* Items with interactive strike off */}
-                        <div className="space-y-2">
-                          {order.items.map((item, idx) => {
-                            const itemKey = `${order.id}-${idx}`;
-                            const isDone = struckItems[itemKey];
-                            return (
-                              <div
-                                key={idx}
-                                onClick={() => toggleItemStrike(itemKey)}
-                                className={`flex justify-between items-start text-xs p-2 rounded-xl cursor-pointer transition-all ${
-                                  isDone
-                                    ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-400 line-through'
-                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-900 dark:text-white'
-                                }`}
-                              >
-                                <div>
-                                  <span className="font-bold">{item.name}</span>
-                                  {item.selectedVariant && (
-                                    <span className="text-[10px] text-slate-400 block ps-2 font-mono">
-                                      • {item.selectedVariant.name}
-                                    </span>
-                                  )}
-                                  {item.selectedModifiers && item.selectedModifiers.length > 0 && (
-                                    <span className="text-[10px] text-amber-500 block ps-2 font-mono">
-                                      + {item.selectedModifiers.map(m => m.name).join(', ')}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="font-mono font-black text-sm bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded">
-                                  x{item.quantity}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {order.customerNotes && (
-                          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-600 dark:text-amber-400 font-bold font-mono">
-                            ⚠️ {order.customerNotes}
-                          </div>
-                        )}
-
-                        {/* Action */}
-                        <button
-                          onClick={() => handleAdvanceStatus(order.id, 'READY')}
-                          className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs font-mono shadow-md transition-all flex items-center justify-center gap-1.5 pos-key"
-                        >
-                          <IconCheckCircle className="w-4 h-4" />
-                          <span>{t.markReadyBtn}</span>
-                        </button>
+                        <span className={`text-xs font-mono flex items-center gap-1.5 ${timer.text}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${timer.dot}`}></span>
+                          {timer.label}
+                        </span>
                       </div>
+
+                      <div className="space-y-1 py-1">
+                        {order.items.map((item, idx) => {
+                          const itemKey = `${order.id}-${idx}`;
+                          const isDone = struckItems[itemKey];
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => toggleItemStrike(itemKey)}
+                              className={`flex justify-between items-start text-xs p-1.5 rounded cursor-pointer transition-colors ${
+                                isDone
+                                  ? 'text-neutral-400 line-through'
+                                  : 'text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5'
+                              }`}
+                            >
+                              <span>{item.name}</span>
+                              <span className="font-mono font-medium">x{item.quantity}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {order.customerNotes && (
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 italic">
+                          {order.customerNotes}
+                        </p>
+                      )}
+
+                      <button
+                        onClick={() => handleAdvanceStatus(order.id, 'READY')}
+                        className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <IconCheckCircle className="w-3.5 h-3.5" />
+                        <span>{t.markReadyBtn}</span>
+                      </button>
                     </div>
                   );
                 })
@@ -349,23 +278,20 @@ export function KitchenDisplayBoard() {
           </div>
         </div>
 
-        {/* Column 3: READY AT PASS (WAITING FOR RUNNER) */}
+        {/* Column 3: READY */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <h2 className="text-xs font-black uppercase font-mono tracking-wider">
-                {t.colReady}
-              </h2>
-            </div>
-            <span className="px-2 py-0.5 rounded text-xs font-mono font-black bg-emerald-500/20 text-emerald-300">
+          <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-white/5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              {t.colReady}
+            </h2>
+            <span className="font-mono text-xs text-neutral-400">
               {activeOrders.filter((o) => o.status === 'READY').length}
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {activeOrders.filter((o) => o.status === 'READY').length === 0 ? (
-              <div className="p-8 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 text-slate-400 text-xs font-mono">
+              <div className="py-12 text-center text-xs text-neutral-400">
                 {t.noReadyOrders}
               </div>
             ) : (
@@ -374,41 +300,33 @@ export function KitchenDisplayBoard() {
                 .map((order) => (
                   <div
                     key={order.id}
-                    className="relative bg-white dark:bg-[#151a26] text-slate-900 dark:text-slate-100 rounded-2xl border-2 border-emerald-500 shadow-xl overflow-hidden"
+                    className="quiet-card rounded-2xl p-4 space-y-3"
                   >
-                    {/* Metal clip simulation */}
-                    <div className="w-8 h-2.5 bg-emerald-500 rounded-b-md mx-auto shadow-xs"></div>
-
-                    <div className="p-4 space-y-3">
-                      {/* Header */}
-                      <div className="flex items-start justify-between border-b border-dashed border-slate-200 dark:border-slate-800 pb-2">
-                        <div>
-                          <span className="text-lg font-black font-mono tracking-tight text-emerald-500">
-                            {order.ticketNumber}
-                          </span>
-                          <span className="text-xs text-emerald-500 font-mono font-bold block">
-                            {order.type === 'DINE_IN' ? `Table ${order.tableNumber}` : t.takeaway}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono border font-bold bg-emerald-500/20 text-emerald-400 border-emerald-500/40">
-                          {t.waitingRunner}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-sm font-bold font-mono text-neutral-900 dark:text-white">
+                          {order.ticketNumber}
+                        </span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold block">
+                          {order.type === 'DINE_IN' ? `Table ${order.tableNumber}` : t.takeaway}
                         </span>
                       </div>
-
-                      <div className="text-xs text-slate-400 font-mono space-y-1">
-                        <div>{t.itemsCountText} <strong className="text-white">{order.items.length} dishes</strong></div>
-                        <div>{t.responsibleServer} <strong className="text-white">{order.serverName}</strong></div>
-                      </div>
-
-                      {/* Action */}
-                      <button
-                        onClick={() => handleAdvanceStatus(order.id, 'SERVED')}
-                        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs font-mono shadow-md transition-all flex items-center justify-center gap-1.5 pos-key"
-                      >
-                        <IconCheckCircle className="w-4 h-4" />
-                        <span>{t.servedBtn}</span>
-                      </button>
+                      <span className="text-xs text-neutral-400 font-mono">
+                        {t.waitingRunner}
+                      </span>
                     </div>
+
+                    <div className="text-xs text-neutral-400 font-mono space-y-0.5">
+                      <div>{order.items.length} dishes • {order.serverName}</div>
+                    </div>
+
+                    <button
+                      onClick={() => handleAdvanceStatus(order.id, 'SERVED')}
+                      className="w-full py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <IconCheckCircle className="w-3.5 h-3.5" />
+                      <span>{t.servedBtn}</span>
+                    </button>
                   </div>
                 ))
             )}

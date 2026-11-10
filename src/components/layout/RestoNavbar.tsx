@@ -1,8 +1,8 @@
 'use client';
 
 // =============================================================================
-// RestoChain OS - Enterprise Multi-Branch Top Navigation Bar
-// Zero childish emojis, 100% sharp SVG icons, Tri-Lingual (AR / FR / EN)
+// RestoChain OS — Minimalist Luxury Navigation Bar
+// Zero loud borders, unified harmonious palette, breathable negative space
 // =============================================================================
 
 import React, { useState } from 'react';
@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import { useRestoStore } from '@/lib/store/restochain-store';
 import { useLanguage } from '@/lib/context/LanguageContext';
 import { Locale } from '@/lib/i18n/translations';
+import { soundFx } from '@/lib/utils/audio';
 import {
   IconStore,
   IconPos,
@@ -58,115 +59,76 @@ export function RestoNavbar() {
     { href: '/delivery', label: t.navDelivery, icon: IconMotorcycle },
   ];
 
-  const languages: { code: Locale; label: string; flag: string }[] = [
-    { code: 'ar', label: 'العربية', flag: 'TN' },
-    { code: 'fr', label: 'Français', flag: 'FR' },
-    { code: 'en', label: 'English', flag: 'GB' },
+  const languages: { code: Locale; label: string }[] = [
+    { code: 'ar', label: 'العربية' },
+    { code: 'fr', label: 'Français' },
+    { code: 'en', label: 'English' },
   ];
 
-  const getBranchDisplayName = (b: typeof activeBranch) => {
-    if (!b) return '';
-    if (locale === 'fr' && b.nameFr) return b.nameFr;
-    if (locale === 'en' && b.nameFr) return b.nameFr;
-    return b.name;
-  };
+  const branchDisplayName = locale === 'ar' ? activeBranch?.name : activeBranch?.nameFr || activeBranch?.name;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors shadow-xs">
-      
-      {/* Top Enterprise Ticker Bar */}
-      <div className="bg-slate-900 text-slate-300 text-[11px] py-1 px-4 font-mono">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              {t.systemSyncActive}
-            </span>
-            <span className="hidden sm:inline text-slate-400">
-              {t.chainStatus}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs">
-            <span className="hidden md:inline text-slate-400">
-              {t.activeShiftNotice}
-            </span>
-            <span className="text-amber-400 font-bold">
-              {t.todaySales}: {activeBranch ? `${activeBranch.dailyRevenue.toFixed(3)} ${t.currency}` : `0.000 ${t.currency}`}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navigation Bar */}
+    <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#0c0e14]/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 gap-4">
+        <div className="flex items-center justify-between h-16 gap-6">
           
           {/* Brand Identity */}
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-700 via-rose-600 to-amber-600 flex items-center justify-center text-white shadow-md shadow-rose-600/30 group-hover:scale-105 transition-transform">
-              <IconStore className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col text-start">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black tracking-tight text-rose-600 dark:text-rose-400 font-sans">
+          <div className="flex items-center gap-6">
+            <Link
+              href="/"
+              onClick={() => soundFx.playClick()}
+              className="flex items-center gap-2.5 group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center font-bold">
+                <IconStore className="w-4 h-4" />
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-extrabold tracking-tight text-neutral-900 dark:text-white text-sm">
                   {t.brandTitle}
                 </span>
-                <span className="text-xs font-black uppercase px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">
-                  OS v3.4
-                </span>
+                <span className="text-[10px] font-mono text-neutral-400">OS</span>
               </div>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                {t.brandTagline}
-              </span>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Multi-Branch Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setBranchDropdownOpen(!branchDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-900 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors"
-            >
-              <IconStore className="w-3.5 h-3.5 text-rose-600" />
-              <span>{getBranchDisplayName(activeBranch)}</span>
-              <IconChevronDown className="w-3.5 h-3.5 text-rose-500" />
-            </button>
+            {/* Seamless Branch Selector */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setBranchDropdownOpen(!branchDropdownOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors font-medium"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>{branchDisplayName}</span>
+                <IconChevronDown className="w-3 h-3 text-neutral-400" />
+              </button>
 
-            {branchDropdownOpen && (
-              <div className="absolute top-full mt-2 start-0 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-2 z-50 space-y-1">
-                <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {t.switchBranchPrompt}
+              {branchDropdownOpen && (
+                <div className="absolute top-full mt-1.5 start-0 w-64 bg-white dark:bg-[#141720] rounded-xl shadow-xl border border-neutral-200/70 dark:border-white/10 p-1.5 z-50 space-y-0.5">
+                  {state.branches.map((b) => (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        soundFx.playClick();
+                        switchBranch(b.id);
+                        setBranchDropdownOpen(false);
+                      }}
+                      className={`w-full text-start px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                        b.id === state.activeBranchId
+                          ? 'bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white font-bold'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <span>{locale === 'ar' ? b.name : b.nameFr || b.name}</span>
+                      <span className="font-mono text-[10px] text-neutral-400">
+                        {b.dailyRevenue.toFixed(0)} {t.currency}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                {state.branches.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => {
-                      switchBranch(b.id);
-                      setBranchDropdownOpen(false);
-                    }}
-                    className={`w-full text-start p-2.5 rounded-xl text-xs transition-colors flex items-center justify-between ${
-                      b.id === state.activeBranchId
-                        ? 'bg-rose-600 text-white font-bold'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div>
-                      <div className="font-bold">{locale === 'ar' ? b.name : b.nameFr || b.name}</div>
-                      <div className={`text-[10px] ${b.id === state.activeBranchId ? 'text-rose-100' : 'text-slate-400'}`}>
-                        {b.city}
-                      </div>
-                    </div>
-                    <span className="font-mono text-[11px] font-bold">
-                      {b.dailyRevenue.toFixed(0)} {t.currency}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Navigation Links for Desktop */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -175,117 +137,105 @@ export function RestoNavbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 relative ${
+                  onClick={() => soundFx.playClick()}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 relative ${
                     isActive
-                      ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800/60'
+                      ? 'text-neutral-900 dark:text-white font-semibold bg-neutral-100 dark:bg-white/10'
+                      : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <Icon className="w-3.5 h-3.5 opacity-70" />
                   <span>{link.label}</span>
                   {link.badge !== undefined && link.badge > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] animate-pulse">
-                      {link.badge}
-                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                   )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Quick Actions & Utilities */}
+          {/* Right Utilities */}
           <div className="flex items-center gap-2">
             
-            {/* Language Switcher Dropdown */}
+            {/* Language Switcher */}
             <div className="relative">
               <button
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 transition-colors"
-                title="Switch Language / Changer de langue"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white uppercase transition-colors"
               >
-                <span className="uppercase">{locale}</span>
-                <IconChevronDown className="w-3 h-3 text-slate-400" />
+                {locale}
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute top-full mt-2 end-0 w-36 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 z-50 space-y-1">
+                <div className="absolute top-full mt-1.5 end-0 w-32 bg-white dark:bg-[#141720] rounded-xl shadow-xl border border-neutral-200/70 dark:border-white/10 p-1 z-50 space-y-0.5">
                   {languages.map((l) => (
                     <button
                       key={l.code}
                       onClick={() => {
+                        soundFx.playClick();
                         setLocale(l.code);
                         setLangDropdownOpen(false);
                       }}
-                      className={`w-full text-start px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between ${
+                      className={`w-full text-start px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                         locale === l.code
-                          ? 'bg-rose-600 text-white'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-neutral-100 dark:bg-white/10 font-bold text-neutral-900 dark:text-white'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5'
                       }`}
                     >
-                      <span>{l.label}</span>
-                      <span className="text-[10px] opacity-70 font-mono uppercase">{l.code}</span>
+                      {l.label}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Dark Mode Toggle */}
+            {/* Dark Mode */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+              className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors"
               title="Toggle theme"
             >
               {isDarkMode ? (
                 <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               )}
             </button>
 
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Menu Trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-              title="Menu"
+              className="lg:hidden p-2 text-neutral-600 dark:text-neutral-300"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
           </div>
+
         </div>
 
-        {/* Mobile Navigation Dropdown */}
+        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden py-4 border-t border-slate-200 dark:border-slate-800 space-y-1 bg-white dark:bg-[#0c121e]">
+          <div className="lg:hidden py-3 border-t border-neutral-100 dark:border-white/5 space-y-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium ${
                   pathname === link.href
-                    ? 'bg-rose-600 text-white'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white font-bold'
+                    : 'text-neutral-600 dark:text-neutral-400'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <link.icon className="w-4 h-4" />
-                  <span>{link.label}</span>
-                </div>
+                <span>{link.label}</span>
                 {link.badge !== undefined && link.badge > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">
-                    {link.badge}
-                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                 )}
               </Link>
             ))}
