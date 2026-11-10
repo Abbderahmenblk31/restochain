@@ -2,11 +2,12 @@
 
 // =============================================================================
 // RestoChain OS - Official Thermal POS Receipt Generator
-// 80mm standard width, fiscal compliance QR & Barcode, tax breakdown (TVA 7% & 19%)
+// 80mm standard width, fiscal compliance QR & Barcode, Tri-Lingual (AR / FR / EN)
 // =============================================================================
 
 import React from 'react';
 import { RestaurantOrder, BranchLocation } from '@/lib/types';
+import { useLanguage } from '@/lib/context/LanguageContext';
 import { IconPrinter, IconCheckCircle } from '@/components/icons/RestoIcons';
 
 interface ReceiptModalProps {
@@ -16,9 +17,13 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
+  const { locale, t } = useLanguage();
+
   const handlePrint = () => {
     window.print();
   };
+
+  const branchName = locale === 'ar' ? branch.name : branch.nameFr || branch.name;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
@@ -31,7 +36,7 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
               <IconCheckCircle className="w-4 h-4" />
             </span>
             <span className="text-sm font-bold text-slate-900 dark:text-white">
-              فاتورة إلكترونية مطابقة للمواصفات
+              {t.receiptFiscalTitle}
             </span>
           </div>
 
@@ -52,30 +57,34 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
             {/* Store Brand */}
             <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-400">
               <h2 className="text-base font-black tracking-wider uppercase">RESTOCHAIN OS</h2>
-              <p className="text-[11px] font-bold">{branch.name}</p>
+              <p className="text-[11px] font-bold">{branchName}</p>
               <p className="text-[10px] text-slate-600">{branch.address}</p>
-              <p className="text-[10px] text-slate-600">الهاتف: {branch.phone}</p>
-              <p className="text-[9px] text-slate-500">المعرف الجبائي: 1829471/B/A/M/000</p>
+              <p className="text-[10px] text-slate-600">Tel: {branch.phone}</p>
+              <p className="text-[9px] text-slate-500">MF: 1829471/B/A/M/000</p>
             </div>
 
             {/* Ticket Info */}
             <div className="py-2.5 border-b border-dashed border-slate-400 space-y-1 text-[11px]">
               <div className="flex justify-between">
-                <span>رقم التذكرة:</span>
+                <span>{t.receiptTicketNo}</span>
                 <span className="font-bold">{order.ticketNumber}</span>
               </div>
               <div className="flex justify-between">
-                <span>التاريخ والوقت:</span>
-                <span>{new Date(order.createdAt).toLocaleString('fr-TN', { hour12: false })}</span>
+                <span>{t.receiptDateTime}</span>
+                <span>{new Date(order.createdAt).toLocaleString(locale === 'ar' ? 'fr-TN' : locale === 'fr' ? 'fr-FR' : 'en-US', { hour12: false })}</span>
               </div>
               <div className="flex justify-between">
-                <span>النوع:</span>
+                <span>{t.receiptType}</span>
                 <span className="font-bold">
-                  {order.type === 'DINE_IN' ? `صالة - طاولة ${order.tableNumber || '-'}` : order.type === 'TAKEAWAY' ? 'سفري (Takeaway)' : 'توصيل منزلي'}
+                  {order.type === 'DINE_IN'
+                    ? `${t.tableLabel} ${order.tableNumber || '-'}`
+                    : order.type === 'TAKEAWAY'
+                    ? t.takeaway
+                    : t.delivery}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>النادل / الكاشير:</span>
+                <span>{t.receiptServer}</span>
                 <span>{order.serverName}</span>
               </div>
             </div>
@@ -83,9 +92,9 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
             {/* Items Table */}
             <div className="py-3 border-b border-dashed border-slate-400">
               <div className="flex justify-between font-bold text-[10px] uppercase text-slate-500 pb-1">
-                <span>الصنف</span>
-                <span className="text-center">الكمية</span>
-                <span className="text-end">المجموع</span>
+                <span>{t.receiptItem}</span>
+                <span className="text-center">{t.receiptQty}</span>
+                <span className="text-end">{t.receiptTotal}</span>
               </div>
 
               <div className="space-y-2 pt-1">
@@ -114,37 +123,40 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
             {/* Financial Summary & Tax Breakdown */}
             <div className="py-3 border-b border-dashed border-slate-400 space-y-1.5 text-[11px]">
               <div className="flex justify-between">
-                <span>المجموع الخام (HT):</span>
-                <span>{(order.totalAmount / 1.07).toFixed(3)} د.ت</span>
+                <span>{t.receiptGrossHt}</span>
+                <span>{(order.totalAmount / 1.07).toFixed(3)} {t.currency}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>الأداء على القيمة المضافة (TVA 7%):</span>
-                <span>{order.taxAmount.toFixed(3)} د.ت</span>
+                <span>{t.receiptVat}</span>
+                <span>{order.taxAmount.toFixed(3)} {t.currency}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between text-rose-600">
-                  <span>خصم ترويجي:</span>
-                  <span>-{order.discountAmount.toFixed(3)} د.ت</span>
+                  <span>{t.discountApplied}</span>
+                  <span>-{order.discountAmount.toFixed(3)} {t.currency}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-black pt-1 border-t border-slate-300">
-                <span>المجموع النهائي الصافي:</span>
-                <span className="text-base font-mono">{order.totalAmount.toFixed(3)} د.ت</span>
+                <span>{t.receiptNetTotal}</span>
+                <span className="text-base font-mono">{order.totalAmount.toFixed(3)} {t.currency}</span>
               </div>
               <div className="flex justify-between text-[10px] text-slate-500 pt-1">
-                <span>طريقة الدفع:</span>
+                <span>{t.receiptPayMethod}</span>
                 <span className="font-bold">
-                  {order.paymentMethod === 'CASH' ? 'نقداً (Espèces)' : order.paymentMethod === 'CARD' ? 'بطاقة بنكية TPE' : 'تطبيق توصيل'}
+                  {order.paymentMethod === 'CASH'
+                    ? t.payCash
+                    : order.paymentMethod === 'CARD'
+                    ? t.payCard
+                    : t.payDeliveryApp}
                 </span>
               </div>
             </div>
 
-            {/* Electronic Compliance QR & Barcode */}
+            {/* Electronic Compliance QR Simulation */}
             <div className="pt-4 text-center space-y-2">
               <div className="flex justify-center">
-                {/* SVG QR Code Simulation */}
                 <div className="p-2 border border-slate-300 rounded bg-white">
-                  <svg className="w-24 h-24" viewBox="0 0 100 100" fill="currentColor">
+                  <svg className="w-20 h-20" viewBox="0 0 100 100" fill="currentColor">
                     <rect x="0" y="0" width="30" height="30" fill="#000" />
                     <rect x="5" y="5" width="20" height="20" fill="#fff" />
                     <rect x="10" y="10" width="10" height="10" fill="#000" />
@@ -164,9 +176,9 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
                 </div>
               </div>
               <p className="text-[9px] text-slate-500 uppercase">
-                فاتورة قانونية مسجلة في السجل الرقمي المركزي
+                {t.receiptFiscalNotice}
               </p>
-              <p className="text-[10px] font-bold">شكراً لزيارتكم • Merci pour votre visite</p>
+              <p className="text-[10px] font-bold">{t.receiptThankYou}</p>
             </div>
           </div>
         </div>
@@ -177,7 +189,7 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
-            إغلاق
+            {t.close}
           </button>
 
           <button
@@ -185,7 +197,7 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-600/30 transition-all"
           >
             <IconPrinter className="w-4 h-4" />
-            <span>طباعة التذكرة الحرارية (80mm)</span>
+            <span>{t.receiptPrintBtn}</span>
           </button>
         </div>
       </div>

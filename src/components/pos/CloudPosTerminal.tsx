@@ -3,11 +3,13 @@
 // =============================================================================
 // RestoChain OS - Enterprise Cloud POS Terminal
 // Ultra-fast order builder, table selector, variant/modifier customization & split bill
+// Tri-Lingual (AR / FR / EN) with dynamic RTL/LTR support
 // =============================================================================
 
 import React, { useState } from 'react';
 import { useRestoStore } from '@/lib/store/restochain-store';
-import { MenuItem, MenuItemVariant, MenuItemModifier, OrderItem, RestaurantOrder } from '@/lib/types';
+import { useLanguage } from '@/lib/context/LanguageContext';
+import { MenuItem, MenuItemVariant, MenuItemModifier, RestaurantOrder } from '@/lib/types';
 import { ReceiptModal } from '@/components/pos/ReceiptModal';
 import {
   IconPos,
@@ -17,9 +19,6 @@ import {
   IconTrash,
   IconReceipt,
   IconKitchen,
-  IconFilter,
-  IconCheckCircle,
-  IconAlertTriangle,
 } from '@/components/icons/RestoIcons';
 
 export function CloudPosTerminal() {
@@ -28,10 +27,10 @@ export function CloudPosTerminal() {
     activeBranch,
     addToCart,
     updateCartItemQuantity,
-    removeFromCart,
     clearCart,
     submitCartOrder,
   } = useRestoStore();
+  const { locale, t } = useLanguage();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,14 +55,15 @@ export function CloudPosTerminal() {
   // Filter Menu Items
   const filteredItems = state.menuItems.filter((item) => {
     const matchesCategory = selectedCategory === 'ALL' || item.categoryId === selectedCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.nameFr.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.nameFr.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   // Calculate Cart Financials
   const cartSubtotal = state.activeCart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
-  const taxAmount = cartSubtotal * 0.07; // 7% Tunisian Hospitality VAT
+  const taxAmount = cartSubtotal * 0.07; // 7% Hospitality VAT
   const totalAmount = Math.max(0, cartSubtotal + taxAmount - appliedDiscount);
 
   // Open item customization dialog or add directly
@@ -77,7 +77,7 @@ export function CloudPosTerminal() {
       addToCart({
         id: `cart-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         menuItemId: item.id,
-        name: item.name,
+        name: locale === 'ar' ? item.name : item.nameFr,
         unitPrice: item.price,
         quantity: 1,
         selectedModifiers: [],
@@ -93,7 +93,7 @@ export function CloudPosTerminal() {
     addToCart({
       id: `cart-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       menuItemId: customizingItem.id,
-      name: customizingItem.name,
+      name: locale === 'ar' ? customizingItem.name : customizingItem.nameFr,
       unitPrice,
       quantity: 1,
       selectedVariant: chosenVariant,
@@ -120,7 +120,7 @@ export function CloudPosTerminal() {
       const disc = cartSubtotal * 0.20;
       setAppliedDiscount(disc);
     } else {
-      alert('كود الخصم غير صالح. جرب RESTO10 للحصول على 10% أو VIP20');
+      alert(locale === 'ar' ? 'كود الخصم غير صالح. جرب RESTO10 أو VIP20' : 'Invalid coupon code. Try RESTO10 or VIP20');
     }
   };
 
@@ -142,6 +142,8 @@ export function CloudPosTerminal() {
     }
   };
 
+  const branchName = locale === 'ar' ? activeBranch?.name : activeBranch?.nameFr || activeBranch?.name;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
@@ -153,13 +155,13 @@ export function CloudPosTerminal() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-slate-900 dark:text-white">نقطة البيع السحابية Cloud POS</h1>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white">{t.posTitle}</h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                محطة #01 - متصلة بالشبكة
+                {t.posStationBadge}
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              الفرع: <strong className="text-slate-800 dark:text-slate-200">{activeBranch?.name}</strong> • الكاشير: <strong className="text-slate-800 dark:text-slate-200">محمد بن سالم</strong>
+              {t.activeBranchBadge}: <strong className="text-slate-800 dark:text-slate-200">{branchName}</strong> • {t.cashierInCharge} <strong className="text-slate-800 dark:text-slate-200">Mohamed Ben Salem</strong>
             </p>
           </div>
         </div>
@@ -174,7 +176,7 @@ export function CloudPosTerminal() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-rose-600'
             }`}
           >
-            صالة (Sur Place)
+            {t.dineIn}
           </button>
           <button
             onClick={() => setOrderType('TAKEAWAY')}
@@ -184,7 +186,7 @@ export function CloudPosTerminal() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-rose-600'
             }`}
           >
-            سفري (À Emporter)
+            {t.takeaway}
           </button>
           <button
             onClick={() => setOrderType('DELIVERY')}
@@ -194,7 +196,7 @@ export function CloudPosTerminal() {
                 : 'text-slate-600 dark:text-slate-300 hover:text-rose-600'
             }`}
           >
-            توصيل (Livraison)
+            {t.delivery}
           </button>
         </div>
       </div>
@@ -205,17 +207,17 @@ export function CloudPosTerminal() {
           <div className="flex items-center justify-between text-xs font-bold text-slate-500">
             <span className="flex items-center gap-1.5">
               <IconTable className="w-4 h-4 text-rose-600" />
-              اختر الطاولة المفتوحة (Plan de Salle):
+              {t.floorPlanTitle}
             </span>
             <div className="flex items-center gap-3 text-[11px]">
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> شاغرة
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> {t.tableAvailable}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> مشغولة
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> {t.tableOccupied}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> تطلب الحساب
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> {t.tableBillRequested}
               </span>
             </div>
           </div>
@@ -240,8 +242,8 @@ export function CloudPosTerminal() {
                       : statusColors[table.status]
                   }`}
                 >
-                  <div className="text-xs font-bold">طاولة {table.number}</div>
-                  <div className="text-[10px] opacity-80">{table.capacity} مقاعد</div>
+                  <div className="text-xs font-bold">{t.tableLabel} {table.number}</div>
+                  <div className="text-[10px] opacity-80">{table.capacity} {t.seatsLabel}</div>
                 </button>
               );
             })}
@@ -267,7 +269,7 @@ export function CloudPosTerminal() {
                     : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-rose-400'
                 }`}
               >
-                الكل (All)
+                {t.allCategories}
               </button>
               {state.categories.map((cat) => (
                 <button
@@ -279,7 +281,7 @@ export function CloudPosTerminal() {
                       : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-rose-400'
                   }`}
                 >
-                  {cat.name}
+                  {locale === 'ar' ? cat.name : cat.nameFr || cat.name}
                 </button>
               ))}
             </div>
@@ -288,7 +290,7 @@ export function CloudPosTerminal() {
             <div className="w-full sm:w-56 shrink-0">
               <input
                 type="text"
-                placeholder="بحث في القائمة..."
+                placeholder={t.searchMenuPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
@@ -298,41 +300,45 @@ export function CloudPosTerminal() {
 
           {/* Dishes Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className="cursor-pointer group p-3.5 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 hover:border-rose-500 hover:shadow-lg transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-rose-600 transition-colors">
-                      {item.name}
-                    </h3>
-                    {item.variants && item.variants.length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                        أحجام متعددة
-                      </span>
-                    )}
+            {filteredItems.map((item) => {
+              const displayName = locale === 'ar' ? item.name : item.nameFr;
+              const subName = locale === 'ar' ? item.nameFr : item.name;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className="cursor-pointer group p-3.5 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 hover:border-rose-500 hover:shadow-lg transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-rose-600 transition-colors">
+                        {displayName}
+                      </h3>
+                      {item.variants && item.variants.length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                          {t.multipleSizesBadge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-sans line-clamp-1 mt-0.5">
+                      {subName}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1.5 leading-relaxed">
+                      {item.description}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-sans line-clamp-1 mt-0.5">
-                    {item.nameFr}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1.5 leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
 
-                <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                  <span className="font-mono text-sm font-black text-rose-600 dark:text-rose-400">
-                    {item.price.toFixed(3)} د.ت
-                  </span>
-                  <button className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 group-hover:bg-rose-600 group-hover:text-white flex items-center justify-center transition-colors">
-                    <IconPlus className="w-4 h-4" />
-                  </button>
+                  <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <span className="font-mono text-sm font-black text-rose-600 dark:text-rose-400">
+                      {item.price.toFixed(3)} {t.currency}
+                    </span>
+                    <button className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 group-hover:bg-rose-600 group-hover:text-white flex items-center justify-center transition-colors">
+                      <IconPlus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -343,15 +349,15 @@ export function CloudPosTerminal() {
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>طلب جاري</span>
+                <span>{t.currentOrderTitle}</span>
                 {orderType === 'DINE_IN' && selectedTableNumber && (
                   <span className="text-xs px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-bold">
-                    طاولة {selectedTableNumber}
+                    {t.tableTag} {selectedTableNumber}
                   </span>
                 )}
               </h2>
               <p className="text-[11px] text-slate-400">
-                {state.activeCart.length} أصناف في السلة
+                {state.activeCart.length} {t.itemsInCart}
               </p>
             </div>
 
@@ -359,10 +365,10 @@ export function CloudPosTerminal() {
               <button
                 onClick={clearCart}
                 className="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1"
-                title="إفراغ السلة"
+                title={t.clearCartBtn}
               >
                 <IconTrash className="w-3.5 h-3.5" />
-                <span>إفراغ</span>
+                <span>{t.clearCartBtn}</span>
               </button>
             )}
           </div>
@@ -372,8 +378,8 @@ export function CloudPosTerminal() {
             {state.activeCart.length === 0 ? (
               <div className="py-12 text-center text-slate-400 space-y-2">
                 <IconPos className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
-                <p className="text-xs font-bold">السلة فارغة حالياً</p>
-                <p className="text-[11px]">اضغط على أي صنف من القائمة لإضافته للطلب</p>
+                <p className="text-xs font-bold">{t.emptyCartTitle}</p>
+                <p className="text-[11px]">{t.emptyCartDesc}</p>
               </div>
             ) : (
               state.activeCart.map((item) => (
@@ -388,29 +394,29 @@ export function CloudPosTerminal() {
                       </h4>
                       {item.selectedVariant && (
                         <span className="text-[10px] text-rose-600 font-bold block">
-                          حجم: {item.selectedVariant.name}
+                          {item.selectedVariant.name}
                         </span>
                       )}
                       {item.selectedModifiers && item.selectedModifiers.length > 0 && (
                         <span className="text-[10px] text-slate-500 block">
-                          إضافات: {item.selectedModifiers.map(m => m.name).join(', ')}
+                          + {item.selectedModifiers.map(m => m.name).join(', ')}
                         </span>
                       )}
                       {item.specialNotes && (
                         <span className="text-[10px] text-amber-600 block italic">
-                          ملاحظة: {item.specialNotes}
+                          {item.specialNotes}
                         </span>
                       )}
                     </div>
                     <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-                      {(item.unitPrice * item.quantity).toFixed(3)} د.ت
+                      {(item.unitPrice * item.quantity).toFixed(3)} {t.currency}
                     </span>
                   </div>
 
                   {/* Quantity Controls */}
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-[11px] font-mono text-slate-400">
-                      {item.unitPrice.toFixed(3)} د.ت للقطعة
+                      {item.unitPrice.toFixed(3)} {t.perItem}
                     </span>
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-2 py-0.5">
                       <button
@@ -439,11 +445,11 @@ export function CloudPosTerminal() {
           {state.activeCart.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                ملاحظات المطبخ الخاصة (Instructions Chef):
+                {t.kitchenNotesLabel}
               </label>
               <input
                 type="text"
-                placeholder="مثال: بدون بصل، ستيك نصف استواء..."
+                placeholder={t.kitchenNotesPlaceholder}
                 value={customerNotes}
                 onChange={(e) => setCustomerNotes(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
@@ -456,7 +462,7 @@ export function CloudPosTerminal() {
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="كود خصم (RESTO10)"
+                placeholder={t.promoCodePlaceholder}
                 value={discountCode}
                 onChange={(e) => setDiscountCode(e.target.value)}
                 className="flex-1 px-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 uppercase font-mono"
@@ -465,7 +471,7 @@ export function CloudPosTerminal() {
                 onClick={handleApplyPromo}
                 className="px-3 py-1.5 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold hover:bg-slate-900 transition-colors"
               >
-                تطبيق
+                {t.applyPromoBtn}
               </button>
             </div>
           )}
@@ -474,23 +480,23 @@ export function CloudPosTerminal() {
           {state.activeCart.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
               <div className="flex justify-between text-slate-500">
-                <span>المجموع الأولي (HT):</span>
-                <span className="font-mono">{cartSubtotal.toFixed(3)} د.ت</span>
+                <span>{t.subtotalHt}</span>
+                <span className="font-mono">{cartSubtotal.toFixed(3)} {t.currency}</span>
               </div>
               <div className="flex justify-between text-slate-500">
-                <span>الأداء على القيمة المضافة (TVA 7%):</span>
-                <span className="font-mono">{taxAmount.toFixed(3)} د.ت</span>
+                <span>{t.vatLabel}</span>
+                <span className="font-mono">{taxAmount.toFixed(3)} {t.currency}</span>
               </div>
               {appliedDiscount > 0 && (
                 <div className="flex justify-between text-rose-600 font-bold">
-                  <span>خصم ترويجي:</span>
-                  <span className="font-mono">-{appliedDiscount.toFixed(3)} د.ت</span>
+                  <span>{t.discountApplied}</span>
+                  <span className="font-mono">-{appliedDiscount.toFixed(3)} {t.currency}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
-                <span>المجموع النهائي الصافي:</span>
+                <span>{t.totalNet}</span>
                 <span className="text-base font-mono text-rose-600 dark:text-rose-400">
-                  {totalAmount.toFixed(3)} د.ت
+                  {totalAmount.toFixed(3)} {t.currency}
                 </span>
               </div>
             </div>
@@ -504,34 +510,34 @@ export function CloudPosTerminal() {
                 className="w-full py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all"
               >
                 <IconReceipt className="w-4 h-4" />
-                <span>دفع وطباعة الفاتورة ({totalAmount.toFixed(3)} د.ت)</span>
+                <span>{t.payAndPrintBtn} ({totalAmount.toFixed(3)} {t.currency})</span>
               </button>
 
               <button
                 onClick={() => {
                   const ord = submitCartOrder(orderType, selectedTableNumber, customerNotes, 'CASH');
                   if (ord) {
-                    alert(`تم إرسال الطلب ${ord.ticketNumber} بنجاح إلى شاشة المطبخ KDS!`);
+                    alert(`${t.confirm}: ${ord.ticketNumber}`);
                   }
                 }}
                 className="w-full py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
               >
                 <IconKitchen className="w-4 h-4" />
-                <span>إرسال للمطبخ فقط (Send to KDS)</span>
+                <span>{t.sendKdsOnlyBtn}</span>
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Item Customization Dialog (Sizes & Addons) */}
+      {/* Item Customization Dialog */}
       {customizingItem && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  تخصيص: {customizingItem.name}
+                  {t.customizeTitle}: {locale === 'ar' ? customizingItem.name : customizingItem.nameFr}
                 </h3>
                 <p className="text-xs text-slate-400">{customizingItem.description}</p>
               </div>
@@ -547,7 +553,7 @@ export function CloudPosTerminal() {
             {customizingItem.variants && customizingItem.variants.length > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  اختر الحجم / التشكيلة:
+                  {t.chooseSize}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {customizingItem.variants.map((v) => (
@@ -561,7 +567,7 @@ export function CloudPosTerminal() {
                       }`}
                     >
                       <div className="text-xs">{v.name}</div>
-                      <div className="text-xs font-mono font-bold mt-1">{v.price.toFixed(3)} د.ت</div>
+                      <div className="text-xs font-mono font-bold mt-1">{v.price.toFixed(3)} {t.currency}</div>
                     </button>
                   ))}
                 </div>
@@ -572,7 +578,7 @@ export function CloudPosTerminal() {
             {customizingItem.availableModifiers && customizingItem.availableModifiers.length > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  إضافات اختيارية (Suppléments):
+                  {t.optionalAddons}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {customizingItem.availableModifiers.map((mod) => {
@@ -588,7 +594,7 @@ export function CloudPosTerminal() {
                         }`}
                       >
                         <span>{mod.name}</span>
-                        <span className="font-mono text-[11px]">+{mod.price.toFixed(3)} د.ت</span>
+                        <span className="font-mono text-[11px]">+{mod.price.toFixed(3)} {t.currency}</span>
                       </button>
                     );
                   })}
@@ -599,11 +605,11 @@ export function CloudPosTerminal() {
             {/* Custom Chef Note */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                ملاحظة للشيف:
+                {t.chefNoteLabel}
               </label>
               <input
                 type="text"
-                placeholder="مثال: بدون مايونيز، بدون جبن..."
+                placeholder={t.chefNotePlaceholder}
                 value={itemCustomNote}
                 onChange={(e) => setItemCustomNote(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
@@ -616,13 +622,13 @@ export function CloudPosTerminal() {
                 onClick={() => setCustomizingItem(null)}
                 className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700"
               >
-                إلغاء
+                {t.cancel}
               </button>
               <button
                 onClick={handleConfirmCustomization}
                 className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-600/30"
               >
-                إضافة للطلب
+                {t.addToOrderBtn}
               </button>
             </div>
           </div>
@@ -636,10 +642,10 @@ export function CloudPosTerminal() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  تسجيل الدفع وإصدار الفاتورة
+                  {t.paymentModalTitle}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  المبلغ المطلوب: <strong className="text-rose-600 font-mono text-sm">{totalAmount.toFixed(3)} د.ت</strong>
+                  {t.amountDue} <strong className="text-rose-600 font-mono text-sm">{totalAmount.toFixed(3)} {t.currency}</strong>
                 </p>
               </div>
               <button
@@ -653,7 +659,7 @@ export function CloudPosTerminal() {
             {/* Payment Method Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                طريقة الدفع:
+                {t.paymentMethod}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
@@ -661,21 +667,21 @@ export function CloudPosTerminal() {
                   className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-rose-600 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
                 >
                   <div className="text-base mb-1">💵</div>
-                  <div>نقداً (Espèces)</div>
+                  <div>{t.payCash}</div>
                 </button>
                 <button
                   onClick={() => handleCompletePayment('CARD')}
                   className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-rose-600 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
                 >
                   <div className="text-base mb-1">💳</div>
-                  <div>بطاقة TPE</div>
+                  <div>{t.payCard}</div>
                 </button>
                 <button
                   onClick={() => handleCompletePayment('DELIVERY_APP')}
                   className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-rose-600 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
                 >
                   <div className="text-base mb-1">🛵</div>
-                  <div>Glovo / Yassir</div>
+                  <div>{t.payDeliveryApp}</div>
                 </button>
               </div>
             </div>
@@ -683,7 +689,7 @@ export function CloudPosTerminal() {
             {/* Quick Cash Calculator */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
               <div className="flex justify-between text-xs">
-                <span>المبلغ المستلم:</span>
+                <span>{t.cashReceived}</span>
                 <input
                   type="number"
                   value={cashReceived}
@@ -692,9 +698,9 @@ export function CloudPosTerminal() {
                 />
               </div>
               <div className="flex justify-between text-xs font-bold text-emerald-600">
-                <span>الباقي للزبون (Monnaie à rendre):</span>
+                <span>{t.changeDue}</span>
                 <span className="font-mono">
-                  {Math.max(0, cashReceived - totalAmount).toFixed(3)} د.ت
+                  {Math.max(0, cashReceived - totalAmount).toFixed(3)} {t.currency}
                 </span>
               </div>
             </div>

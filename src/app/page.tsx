@@ -2,26 +2,27 @@
 
 // =============================================================================
 // RestoChain OS - Executive Multi-Branch HQ Command Center
-// Multi-location revenue aggregation, table occupancy, active tickets & chain performance
+// Multi-location revenue aggregation, table occupancy, active tickets & chain telemetry
 // =============================================================================
 
 import React from 'react';
 import Link from 'next/link';
 import { useRestoStore } from '@/lib/store/restochain-store';
+import { useLanguage } from '@/lib/context/LanguageContext';
 import {
   IconStore,
   IconPos,
   IconKitchen,
   IconInventory,
   IconReceipt,
-  IconMotorcycle,
   IconTrendingUp,
   IconTable,
   IconCheckCircle,
 } from '@/components/icons/RestoIcons';
 
 export default function RestoChainHqPage() {
-  const { state, switchBranch, activeBranch } = useRestoStore();
+  const { state, switchBranch } = useRestoStore();
+  const { locale, t } = useLanguage();
 
   const totalChainRevenue = state.branches.reduce((acc, b) => acc + b.dailyRevenue, 0);
   const totalChainOrders = state.branches.reduce((acc, b) => acc + b.activeOrdersCount, 0);
@@ -36,13 +37,13 @@ export default function RestoChainHqPage() {
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/30">
             <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
-            <span>نظام الإدارة المركزي لسلاسل المطاعم الفاخرة</span>
+            <span>{t.hqBadge}</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            لوحة القيادة المركزية HQ الموحدة
+            {t.hqTitle}
           </h1>
           <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-2xl">
-            متابعة فورية للمبيعات اللحظية، مؤشرات الأداء التشغيلية، مراقبة المخزون، ونسب تكلفة الوجبات عبر كافة فروع السلسلة في تونس الكبرى والمحافظات.
+            {t.hqSubtitle}
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-4">
@@ -51,7 +52,7 @@ export default function RestoChainHqPage() {
               className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition-all"
             >
               <IconPos className="w-4 h-4" />
-              <span>فتح نقطة البيع Cloud POS</span>
+              <span>{t.hqOpenPos}</span>
             </Link>
 
             <Link
@@ -59,7 +60,7 @@ export default function RestoChainHqPage() {
               className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 transition-all"
             >
               <IconKitchen className="w-4 h-4" />
-              <span>شاشة المطبخ KDS (بث مباشر)</span>
+              <span>{t.hqLiveKds}</span>
             </Link>
 
             <Link
@@ -67,7 +68,7 @@ export default function RestoChainHqPage() {
               className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition-all"
             >
               <IconInventory className="w-4 h-4" />
-              <span>المخزون وتكلفة الوجبات</span>
+              <span>{t.hqInventoryBtn}</span>
             </Link>
           </div>
         </div>
@@ -82,57 +83,57 @@ export default function RestoChainHqPage() {
         {/* KPI 1 */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-            <span>مبيعات السلسلة الإجمالية اليوم</span>
+            <span>{t.kpiTotalRevenue}</span>
             <IconTrendingUp className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 dark:text-white">
-            {totalChainRevenue.toFixed(3)} د.ت
+            {totalChainRevenue.toFixed(3)} {t.currency}
           </div>
           <div className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
             <span>+14.2%</span>
-            <span className="text-slate-400 font-normal">مقارنة بالأسبوع الماضي</span>
+            <span className="text-slate-400 font-normal">{t.kpiComparedLastWeek}</span>
           </div>
         </div>
 
         {/* KPI 2 */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-            <span>الطلبات النشطة عبر الفروع</span>
+            <span>{t.kpiActiveOrders}</span>
             <IconKitchen className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 dark:text-white">
-            {totalChainOrders} طلبات
+            {totalChainOrders}
           </div>
           <div className="text-[11px] text-amber-600 font-bold">
-            <span>متوسط وقت التحضير: 12.4 دقيقة</span>
+            <span>{t.kpiAvgCookTime}</span>
           </div>
         </div>
 
         {/* KPI 3 */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-            <span>نسبة إشغال الطاولات (فرعك)</span>
+            <span>{t.kpiTableOccupancy}</span>
             <IconTable className="w-4 h-4 text-rose-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 dark:text-white">
             {occupancyRate}%
           </div>
           <div className="text-[11px] text-slate-400">
-            <span>{occupiedTables} من إجمالي {state.tables.length} طاولات محجوزة</span>
+            <span>{occupiedTables} / {state.tables.length} {t.kpiOccupiedCount}</span>
           </div>
         </div>
 
         {/* KPI 4 */}
         <div className="p-6 rounded-3xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-            <span>متوسط تكلفة الأغذية (Food Cost)</span>
+            <span>{t.kpiFoodCostAvg}</span>
             <IconCheckCircle className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
             28.4%
           </div>
           <div className="text-[11px] text-emerald-600 font-bold">
-            <span>ضمن النطاق الأمثل المستهدف (25-32%)</span>
+            <span>{t.kpiTargetRange}</span>
           </div>
         </div>
 
@@ -143,20 +144,21 @@ export default function RestoChainHqPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              مقارنة أداء الفروع في الزمن الحقيقي (Live Multi-Branch Network)
+              {t.branchPerformanceTitle}
             </h2>
             <p className="text-xs text-slate-500">
-              اضغط على أي فرع للتبديل الفوري وإدارة العمليات الميدانية الخاصة به.
+              {t.branchPerformanceSubtitle}
             </p>
           </div>
           <span className="text-xs font-mono font-bold text-slate-400">
-            4 فروع متصلة سحابياً
+            {t.branchConnectedCount}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {state.branches.map((b) => {
             const isSelected = b.id === state.activeBranchId;
+            const branchName = locale === 'ar' ? b.name : b.nameFr || b.name;
             return (
               <div
                 key={b.id}
@@ -170,38 +172,38 @@ export default function RestoChainHqPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                      {b.name}
+                      {branchName}
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-0.5">{b.address}</p>
                   </div>
                   {isSelected && (
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-600 text-white">
-                      الفرع النشط
+                      {t.activeBranchBadge}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">مبيعات اليوم:</span>
+                    <span className="text-slate-500">{t.branchSalesToday}</span>
                     <span className="font-mono font-bold text-slate-900 dark:text-white">
-                      {b.dailyRevenue.toFixed(3)} د.ت
+                      {b.dailyRevenue.toFixed(3)} {t.currency}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">طلبات جارية:</span>
+                    <span className="text-slate-500">{t.branchActiveOrders}</span>
                     <span className="font-mono font-bold text-amber-600">
-                      {b.activeOrdersCount} طلبات
+                      {b.activeOrdersCount}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">الطاولات:</span>
+                    <span className="text-slate-500">{t.branchTables}</span>
                     <span className="font-mono text-slate-700 dark:text-slate-300">
-                      {b.tablesCount} طاولة
+                      {b.tablesCount}
                     </span>
                   </div>
                   <div className="flex justify-between text-[11px] text-slate-400 pt-1">
-                    <span>مدير الفرع:</span>
+                    <span>{t.branchManager}</span>
                     <span className="font-bold text-slate-700 dark:text-slate-300">{b.managerName}</span>
                   </div>
                 </div>
@@ -222,10 +224,10 @@ export default function RestoChainHqPage() {
             <IconPos className="w-6 h-6" />
           </div>
           <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-rose-600 transition-colors">
-            نقطة البيع السحابية Cloud POS
+            {t.posCardTitle}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            بناء طلبات فوري، اختيار الطاولات، تخصيص الأصناف والإضافات، واحتساب الضرائب مع طباعة الفواتير الحرارية.
+            {t.posCardDesc}
           </p>
         </Link>
 
@@ -237,10 +239,10 @@ export default function RestoChainHqPage() {
             <IconKitchen className="w-6 h-6" />
           </div>
           <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
-            شاشة المطبخ الذكية KDS
+            {t.kdsCardTitle}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            مزامنة مباشرة مع الطهاة، مؤقتات دقيقة للتأخير باللونين الأصفر والأحمر، وتأكيد جاهزية الأطباق بضغطة زر.
+            {t.kdsCardDesc}
           </p>
         </Link>
 
@@ -252,10 +254,10 @@ export default function RestoChainHqPage() {
             <IconReceipt className="w-6 h-6" />
           </div>
           <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">
-            الورديات وتقرير Z المالي
+            {t.shiftsCardTitle}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            مطابقة صندوق النقدية اليومية، احتساب فوارق الكاشير بدقة، وإغلاق الوردية وفق القوانين الجبائية.
+            {t.shiftsCardDesc}
           </p>
         </Link>
 

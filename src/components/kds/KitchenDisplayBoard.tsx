@@ -3,21 +3,20 @@
 // =============================================================================
 // RestoChain OS - Live Kitchen Display System (KDS)
 // Real-time chef ticket queues, cooking timers, station filters & one-click status transitions
+// Tri-Lingual (AR / FR / EN) with dynamic RTL/LTR support
 // =============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRestoStore } from '@/lib/store/restochain-store';
-import { RestaurantOrder } from '@/lib/types';
+import { useLanguage } from '@/lib/context/LanguageContext';
 import {
   IconKitchen,
-  IconClock,
   IconCheckCircle,
-  IconAlertTriangle,
-  IconFilter,
 } from '@/components/icons/RestoIcons';
 
 export function KitchenDisplayBoard() {
   const { state, activeBranch, updateOrderStatus } = useRestoStore();
+  const { locale, t } = useLanguage();
   const [selectedStation, setSelectedStation] = useState<string>('ALL');
   const [struckItems, setStruckItems] = useState<Record<string, boolean>>({});
 
@@ -44,20 +43,22 @@ export function KitchenDisplayBoard() {
     if (minutes < 10) {
       return {
         color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-        label: `${minutes} دقيقة (طبيعي)`,
+        label: `${minutes} ${t.timerNormal}`,
       };
     } else if (minutes < 18) {
       return {
         color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30',
-        label: `${minutes} دقيقة (متوسط)`,
+        label: `${minutes} ${t.timerWarning}`,
       };
     } else {
       return {
         color: 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500 animate-pulse font-black',
-        label: `🚨 ${minutes} دقيقة (تأخير حرج)`,
+        label: `🚨 ${minutes} ${t.timerCritical}`,
       };
     }
   };
+
+  const branchName = locale === 'ar' ? activeBranch?.name : activeBranch?.nameFr || activeBranch?.name;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -70,13 +71,13 @@ export function KitchenDisplayBoard() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black">شاشة المطبخ الذكية (KDS - Kitchen Display)</h1>
+              <h1 className="text-xl font-black">{t.kdsTitle}</h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                بث حي ومباشر
+                {t.kdsLiveBadge}
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              فرع: <strong className="text-white">{activeBranch?.name}</strong> • التذاكر النشطة: <strong className="text-amber-400">{activeOrders.length} طلبات</strong>
+              {t.activeBranchBadge}: <strong className="text-white">{branchName}</strong> • {t.kdsSubtitle}: <strong className="text-amber-400">{activeOrders.length} {t.kdsActiveTicketsCount}</strong>
             </p>
           </div>
         </div>
@@ -84,11 +85,11 @@ export function KitchenDisplayBoard() {
         {/* Station Filters */}
         <div className="flex items-center gap-1.5 overflow-x-auto">
           {[
-            { id: 'ALL', label: 'كافة المحطات' },
-            { id: 'GRILL', label: 'محطة الشواء (Grill)' },
-            { id: 'PIZZA', label: 'فرن البيتزا (Pizza)' },
-            { id: 'COLD', label: 'المقبلات والسلطات' },
-            { id: 'BAR', label: 'المشروبات والبار' },
+            { id: 'ALL', label: t.stationAll },
+            { id: 'GRILL', label: t.stationGrill },
+            { id: 'PIZZA', label: t.stationPizza },
+            { id: 'COLD', label: t.stationCold },
+            { id: 'BAR', label: t.stationBar },
           ].map((st) => (
             <button
               key={st.id}
@@ -114,7 +115,7 @@ export function KitchenDisplayBoard() {
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-blue-500"></span>
               <h2 className="text-sm font-black text-blue-900 dark:text-blue-300">
-                طلبات جديدة (New)
+                {t.colNew}
               </h2>
             </div>
             <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100">
@@ -125,7 +126,7 @@ export function KitchenDisplayBoard() {
           <div className="space-y-4">
             {activeOrders.filter((o) => o.status === 'NEW').length === 0 ? (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs">
-                لا توجد طلبات جديدة في الانتظار
+                {t.noNewOrders}
               </div>
             ) : (
               activeOrders
@@ -145,7 +146,7 @@ export function KitchenDisplayBoard() {
                             {order.ticketNumber}
                           </span>
                           <span className="text-xs text-slate-500 block">
-                            {order.type === 'DINE_IN' ? `طاولة ${order.tableNumber}` : 'سفري (Takeaway)'}
+                            {order.type === 'DINE_IN' ? `${t.tableLabel} ${order.tableNumber}` : t.takeaway}
                           </span>
                         </div>
                         <span className={`px-2.5 py-1 rounded-xl text-xs font-mono border ${timer.color}`}>
@@ -181,7 +182,7 @@ export function KitchenDisplayBoard() {
 
                       {order.customerNotes && (
                         <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-300 font-bold">
-                          ⚠️ ملاحظة: {order.customerNotes}
+                          ⚠️ {order.customerNotes}
                         </div>
                       )}
 
@@ -190,7 +191,7 @@ export function KitchenDisplayBoard() {
                         onClick={() => updateOrderStatus(order.id, 'PREPARING')}
                         className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
                       >
-                        <span>بدء التحضير الآن (Start Cooking)</span>
+                        <span>{t.startCookingBtn}</span>
                       </button>
                     </div>
                   );
@@ -205,7 +206,7 @@ export function KitchenDisplayBoard() {
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-amber-500 animate-ping"></span>
               <h2 className="text-sm font-black text-amber-900 dark:text-amber-300">
-                قيد الطهي والتحضير (Cooking)
+                {t.colPreparing}
               </h2>
             </div>
             <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
@@ -216,7 +217,7 @@ export function KitchenDisplayBoard() {
           <div className="space-y-4">
             {activeOrders.filter((o) => o.status === 'PREPARING').length === 0 ? (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs">
-                لا توجد طلبات قيد التحضير حالياً
+                {t.noPrepOrders}
               </div>
             ) : (
               activeOrders
@@ -236,7 +237,7 @@ export function KitchenDisplayBoard() {
                             {order.ticketNumber}
                           </span>
                           <span className="text-xs text-slate-500 block">
-                            {order.type === 'DINE_IN' ? `طاولة ${order.tableNumber}` : 'سفري (Takeaway)'}
+                            {order.type === 'DINE_IN' ? `${t.tableLabel} ${order.tableNumber}` : t.takeaway}
                           </span>
                         </div>
                         <span className={`px-2.5 py-1 rounded-xl text-xs font-mono border ${timer.color}`}>
@@ -282,7 +283,7 @@ export function KitchenDisplayBoard() {
 
                       {order.customerNotes && (
                         <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-300 font-bold">
-                          ⚠️ ملاحظة: {order.customerNotes}
+                          ⚠️ {order.customerNotes}
                         </div>
                       )}
 
@@ -292,7 +293,7 @@ export function KitchenDisplayBoard() {
                         className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
                       >
                         <IconCheckCircle className="w-4 h-4" />
-                        <span>جاهز للتقديم (Mark as Ready)</span>
+                        <span>{t.markReadyBtn}</span>
                       </button>
                     </div>
                   );
@@ -307,7 +308,7 @@ export function KitchenDisplayBoard() {
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
               <h2 className="text-sm font-black text-emerald-900 dark:text-emerald-300">
-                جاهز للتقديم (Ready to Serve)
+                {t.colReady}
               </h2>
             </div>
             <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100">
@@ -318,7 +319,7 @@ export function KitchenDisplayBoard() {
           <div className="space-y-4">
             {activeOrders.filter((o) => o.status === 'READY').length === 0 ? (
               <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs">
-                لا توجد طلبات تنتظر الاستلام
+                {t.noReadyOrders}
               </div>
             ) : (
               activeOrders
@@ -335,18 +336,18 @@ export function KitchenDisplayBoard() {
                           {order.ticketNumber}
                         </span>
                         <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold block">
-                          {order.type === 'DINE_IN' ? `جاهز على الطاولة ${order.tableNumber}` : 'جاهز للاستلام السفري'}
+                          {order.type === 'DINE_IN' ? `${t.tableLabel} ${order.tableNumber}` : t.takeaway}
                         </span>
                       </div>
                       <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
-                        في انتظار النادل
+                        {t.waitingRunner}
                       </span>
                     </div>
 
                     {/* Summary */}
                     <div className="text-xs text-slate-500 space-y-1">
-                      <div>عدد الأصناف: <strong className="text-slate-800 dark:text-slate-200">{order.items.length} أصناف</strong></div>
-                      <div>النادل المسؤول: <strong className="text-slate-800 dark:text-slate-200">{order.serverName}</strong></div>
+                      <div>{t.itemsCountText} <strong className="text-slate-800 dark:text-slate-200">{order.items.length}</strong></div>
+                      <div>{t.responsibleServer} <strong className="text-slate-800 dark:text-slate-200">{order.serverName}</strong></div>
                     </div>
 
                     {/* Action */}
@@ -355,7 +356,7 @@ export function KitchenDisplayBoard() {
                       className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
                     >
                       <IconCheckCircle className="w-4 h-4" />
-                      <span>تم التسليم على الطاولة (Served)</span>
+                      <span>{t.servedBtn}</span>
                     </button>
                   </div>
                 ))
