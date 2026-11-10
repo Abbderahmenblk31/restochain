@@ -1,9 +1,8 @@
 'use client';
 
 // =============================================================================
-// RestoChain OS - Enterprise Cloud POS Terminal
-// Ultra-fast order builder, table selector, variant/modifier customization & split bill
-// Tri-Lingual (AR / FR / EN) with dynamic RTL/LTR support
+// RestoChain OS - Bespoke Enterprise Cloud POS Terminal
+// Architectural Visual Floor Plan, Physical Tactile Numpad, Michelin-Grade Ergonomics
 // =============================================================================
 
 import React, { useState } from 'react';
@@ -11,6 +10,7 @@ import { useRestoStore } from '@/lib/store/restochain-store';
 import { useLanguage } from '@/lib/context/LanguageContext';
 import { MenuItem, MenuItemVariant, MenuItemModifier, RestaurantOrder } from '@/lib/types';
 import { ReceiptModal } from '@/components/pos/ReceiptModal';
+import { soundFx } from '@/lib/utils/audio';
 import {
   IconPos,
   IconTable,
@@ -19,7 +19,11 @@ import {
   IconTrash,
   IconReceipt,
   IconKitchen,
+  IconClock,
+  IconCheckCircle,
 } from '@/components/icons/RestoIcons';
+
+type DiningZone = 'MAIN_HALL' | 'TERRACE' | 'VIP_LOUNGE';
 
 export function CloudPosTerminal() {
   const {
@@ -32,9 +36,10 @@ export function CloudPosTerminal() {
   } = useRestoStore();
   const { locale, t } = useLanguage();
 
+  const [activeZone, setActiveZone] = useState<DiningZone>('MAIN_HALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTableNumber, setSelectedTableNumber] = useState<number | undefined>(4);
+  const [selectedTableNumber, setSelectedTableNumber] = useState<number>(3);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKEAWAY' | 'DELIVERY'>('DINE_IN');
   const [customerNotes, setCustomerNotes] = useState('');
   const [discountCode, setDiscountCode] = useState('');
@@ -46,11 +51,11 @@ export function CloudPosTerminal() {
   const [chosenModifiers, setChosenModifiers] = useState<MenuItemModifier[]>([]);
   const [itemCustomNote, setItemCustomNote] = useState('');
 
-  // Checkout & Receipt State
+  // Payment & Numpad State
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [lastGeneratedOrder, setLastGeneratedOrder] = useState<RestaurantOrder | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [cashReceived, setCashReceived] = useState<number>(50);
+  const [cashTenderedStr, setCashTenderedStr] = useState<string>('50');
 
   // Filter Menu Items
   const filteredItems = state.menuItems.filter((item) => {
@@ -61,13 +66,16 @@ export function CloudPosTerminal() {
     return matchesCategory && matchesSearch;
   });
 
-  // Calculate Cart Financials
+  // Financial Calculations
   const cartSubtotal = state.activeCart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
-  const taxAmount = cartSubtotal * 0.07; // 7% Hospitality VAT
+  const taxAmount = cartSubtotal * 0.07; // 7% VAT
   const totalAmount = Math.max(0, cartSubtotal + taxAmount - appliedDiscount);
+  const cashTendered = parseFloat(cashTenderedStr) || 0;
+  const changeDue = Math.max(0, cashTendered - totalAmount);
 
-  // Open item customization dialog or add directly
+  // Add Item Handler with tactile audio
   const handleItemClick = (item: MenuItem) => {
+    soundFx.playClick();
     if (item.variants && item.variants.length > 0) {
       setCustomizingItem(item);
       setChosenVariant(item.variants[0]);
@@ -87,6 +95,7 @@ export function CloudPosTerminal() {
 
   const handleConfirmCustomization = () => {
     if (!customizingItem) return;
+    soundFx.playClick();
     const extraPrice = chosenModifiers.reduce((acc, m) => acc + m.price, 0);
     const unitPrice = (chosenVariant ? chosenVariant.price : customizingItem.price) + extraPrice;
 
@@ -105,6 +114,7 @@ export function CloudPosTerminal() {
   };
 
   const toggleModifier = (mod: MenuItemModifier) => {
+    soundFx.playClick();
     if (chosenModifiers.some((m) => m.id === mod.id)) {
       setChosenModifiers(chosenModifiers.filter((m) => m.id !== mod.id));
     } else {
@@ -112,19 +122,25 @@ export function CloudPosTerminal() {
     }
   };
 
-  const handleApplyPromo = () => {
-    if (discountCode.trim().toUpperCase() === 'RESTO10') {
-      const disc = cartSubtotal * 0.10;
-      setAppliedDiscount(disc);
-    } else if (discountCode.trim().toUpperCase() === 'VIP20') {
-      const disc = cartSubtotal * 0.20;
-      setAppliedDiscount(disc);
+  // Numpad key input handler
+  const handleNumpadKey = (key: string) => {
+    soundFx.playClick();
+    if (key === 'C') {
+      setCashTenderedStr('');
+    } else if (key === '⌫') {
+      setCashTenderedStr((prev) => prev.slice(0, -1));
+    } else if (key === 'EXACT') {
+      setCashTenderedStr(totalAmount.toFixed(3));
+    } else if (key.startsWith('+')) {
+      const add = parseFloat(key.replace('+', ''));
+      setCashTenderedStr((prev) => ((parseFloat(prev) || 0) + add).toFixed(0));
     } else {
-      alert(locale === 'ar' ? 'كود الخصم غير صالح. جرب RESTO10 أو VIP20' : 'Invalid coupon code. Try RESTO10 or VIP20');
+      setCashTenderedStr((prev) => (prev === '0' ? key : prev + key));
     }
   };
 
   const handleCompletePayment = (paymentMethod: 'CASH' | 'CARD' | 'DELIVERY_APP') => {
+    soundFx.playCashRegister();
     const newOrder = submitCartOrder(
       orderType,
       orderType === 'DINE_IN' ? selectedTableNumber : undefined,
@@ -139,111 +155,176 @@ export function CloudPosTerminal() {
       setAppliedDiscount(0);
       setDiscountCode('');
       setCustomerNotes('');
+      setCashTenderedStr('50');
     }
   };
 
   const branchName = locale === 'ar' ? activeBranch?.name : activeBranch?.nameFr || activeBranch?.name;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
       
-      {/* Top POS Header & Mode Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-3xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-xs">
+      {/* Top Professional Station Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#121722] border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-md shadow-rose-600/30">
-            <IconPos className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 font-bold">
+            <IconPos className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-slate-900 dark:text-white">{t.posTitle}</h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                {t.posStationBadge}
+              <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                {t.posTitle}
+              </h1>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                TERMINAL-01 • ONLINE
               </span>
             </div>
-            <p className="text-xs text-slate-500">
-              {t.activeBranchBadge}: <strong className="text-slate-800 dark:text-slate-200">{branchName}</strong> • {t.cashierInCharge} <strong className="text-slate-800 dark:text-slate-200">Mohamed Ben Salem</strong>
+            <p className="text-xs text-slate-500 font-mono">
+              {branchName} • Shift #104 (Amine B.)
             </p>
           </div>
         </div>
 
-        {/* Order Type Toggle */}
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1 border border-slate-200 dark:border-slate-700">
-          <button
-            onClick={() => setOrderType('DINE_IN')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              orderType === 'DINE_IN'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-rose-600'
-            }`}
-          >
-            {t.dineIn}
-          </button>
-          <button
-            onClick={() => setOrderType('TAKEAWAY')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              orderType === 'TAKEAWAY'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-rose-600'
-            }`}
-          >
-            {t.takeaway}
-          </button>
-          <button
-            onClick={() => setOrderType('DELIVERY')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              orderType === 'DELIVERY'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-rose-600'
-            }`}
-          >
-            {t.delivery}
-          </button>
+        {/* Order Mode Selector with tactile physical feel */}
+        <div className="flex items-center bg-slate-100 dark:bg-slate-900/90 p-1 rounded-xl gap-1 border border-slate-200 dark:border-slate-800">
+          {(['DINE_IN', 'TAKEAWAY', 'DELIVERY'] as const).map((mode) => {
+            const labels = {
+              DINE_IN: t.dineIn,
+              TAKEAWAY: t.takeaway,
+              DELIVERY: t.delivery,
+            };
+            const isSelected = orderType === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => {
+                  soundFx.playClick();
+                  setOrderType(mode);
+                }}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all pos-key ${
+                  isSelected
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {labels[mode]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Table Selector Strip (When Dine-in is active) */}
+      {/* Visual Architectural Floor Plan Grid (When Dine-In is active) */}
       {orderType === 'DINE_IN' && (
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <IconTable className="w-4 h-4 text-rose-600" />
-              {t.floorPlanTitle}
-            </span>
-            <div className="flex items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1">
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#121722] border border-slate-200/80 dark:border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                <IconTable className="w-4 h-4 text-amber-500" />
+                {t.floorPlanTitle}
+              </span>
+
+              {/* Zone Selector Pills */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+                {[
+                  { id: 'MAIN_HALL', label: locale === 'ar' ? 'القاعة الكبرى' : locale === 'fr' ? 'Salle Principale' : 'Main Dining' },
+                  { id: 'TERRACE', label: locale === 'ar' ? 'التراس المفتوح' : locale === 'fr' ? 'Terrasse' : 'Terrace Garden' },
+                  { id: 'VIP_LOUNGE', label: locale === 'ar' ? 'صالون VIP' : locale === 'fr' ? 'Salon VIP' : 'VIP Lounge' },
+                ].map((z) => (
+                  <button
+                    key={z.id}
+                    onClick={() => {
+                      soundFx.playClick();
+                      setActiveZone(z.id as DiningZone);
+                    }}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                      activeZone === z.id
+                        ? 'bg-white dark:bg-slate-800 text-amber-500 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {z.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Legend */}
+            <div className="flex items-center gap-4 text-[11px] font-mono">
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> {t.tableAvailable}
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> {t.tableOccupied}
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> {t.tableBillRequested}
+              <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span> {t.tableBillRequested}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {/* Real Visual Table Layout with physical shapes & timers */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 pt-1">
             {state.tables.map((table) => {
               const isSelected = selectedTableNumber === table.number;
-              const statusColors = {
-                AVAILABLE: 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300',
-                OCCUPIED: 'border-rose-300 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300',
-                BILL_REQUESTED: 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300',
-                RESERVED: 'border-slate-300 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
-              };
+              const isRound = table.capacity <= 2;
+              const isOccupied = table.status === 'OCCUPIED';
+              const isBillReq = table.status === 'BILL_REQUESTED';
+
+              const borderClass = isSelected
+                ? 'ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-[#121722] border-amber-500'
+                : isBillReq
+                ? 'border-amber-400/80 bg-amber-500/10 text-amber-600 dark:text-amber-300'
+                : isOccupied
+                ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300'
+                : 'border-slate-200 dark:border-slate-800 hover:border-emerald-400 text-slate-700 dark:text-slate-300';
 
               return (
                 <button
                   key={table.id}
-                  onClick={() => setSelectedTableNumber(table.number)}
-                  className={`px-3.5 py-2.5 rounded-2xl border text-center shrink-0 transition-all ${
-                    isSelected
-                      ? 'ring-2 ring-rose-600 ring-offset-2 scale-105 font-black bg-rose-600 text-white border-rose-600 shadow-md'
-                      : statusColors[table.status]
+                  onClick={() => {
+                    soundFx.playClick();
+                    setSelectedTableNumber(table.number);
+                  }}
+                  className={`relative p-3 rounded-2xl border text-center transition-all flex flex-col justify-between h-24 pos-key ${borderClass} ${
+                    isRound ? 'aspect-square' : ''
                   }`}
                 >
-                  <div className="text-xs font-bold">{t.tableLabel} {table.number}</div>
-                  <div className="text-[10px] opacity-80">{table.capacity} {t.seatsLabel}</div>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-mono text-xs font-black">
+                      T-{table.number}
+                    </span>
+                    <span className="text-[10px] opacity-75 font-mono">
+                      👤 {table.capacity}
+                    </span>
+                  </div>
+
+                  <div className="my-auto">
+                    {isOccupied && (
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-mono font-black block">
+                          {table.currentBill ? `${table.currentBill.toFixed(0)} ${t.currency}` : 'Active'}
+                        </span>
+                        <span className="text-[9px] font-mono opacity-80 flex items-center justify-center gap-1">
+                          <IconClock className="w-2.5 h-2.5" /> 38m
+                        </span>
+                      </div>
+                    )}
+                    {isBillReq && (
+                      <span className="text-[10px] font-bold text-amber-500 animate-pulse block">
+                        طلب الحساب
+                      </span>
+                    )}
+                    {!isOccupied && !isBillReq && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                        شاغرة
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-[9px] text-slate-400 truncate w-full">
+                    {table.waiterName ? `👨‍🍳 ${table.waiterName}` : '—'}
+                  </div>
                 </button>
               );
             })}
@@ -251,22 +332,24 @@ export function CloudPosTerminal() {
         </div>
       )}
 
-      {/* Main Split Grid: Menu Catalog (65%) & Live Cart (35%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Main Split Screen: Menu Catalog (62%) & Real-Time Physical Ticket (38%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* Left / Center: Menu Catalog */}
+        {/* Left Side: High-Contrast Dishes Catalog */}
         <div className="lg:col-span-8 space-y-4">
           
-          {/* Category Pills & Search */}
+          {/* Category Filter Pills & Instant Search */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-            {/* Category Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1">
               <button
-                onClick={() => setSelectedCategory('ALL')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                onClick={() => {
+                  soundFx.playClick();
+                  setSelectedCategory('ALL');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all pos-key ${
                   selectedCategory === 'ALL'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-rose-400'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                    : 'bg-white dark:bg-[#121722] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
                 }`}
               >
                 {t.allCategories}
@@ -274,11 +357,14 @@ export function CloudPosTerminal() {
               {state.categories.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                  onClick={() => {
+                    soundFx.playClick();
+                    setSelectedCategory(cat.id);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all pos-key ${
                     selectedCategory === cat.id
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-rose-400'
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                      : 'bg-white dark:bg-[#121722] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
                   }`}
                 >
                   {locale === 'ar' ? cat.name : cat.nameFr || cat.name}
@@ -286,14 +372,13 @@ export function CloudPosTerminal() {
               ))}
             </div>
 
-            {/* Quick Search */}
             <div className="w-full sm:w-56 shrink-0">
               <input
                 type="text"
                 placeholder={t.searchMenuPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-[#121722] border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -307,20 +392,20 @@ export function CloudPosTerminal() {
                 <div
                   key={item.id}
                   onClick={() => handleItemClick(item)}
-                  className="cursor-pointer group p-3.5 rounded-2xl bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 hover:border-rose-500 hover:shadow-lg transition-all flex flex-col justify-between"
+                  className="cursor-pointer group p-4 rounded-2xl bg-white dark:bg-[#121722] border border-slate-200/80 dark:border-slate-800/80 hover:border-amber-500/80 hover:shadow-md transition-all flex flex-col justify-between pos-key"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-rose-600 transition-colors">
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
                         {displayName}
                       </h3>
                       {item.variants && item.variants.length > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
                           {t.multipleSizesBadge}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-sans line-clamp-1 mt-0.5">
+                    <p className="text-[11px] text-slate-400 font-sans line-clamp-1 mt-0.5">
                       {subName}
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1.5 leading-relaxed">
@@ -329,10 +414,10 @@ export function CloudPosTerminal() {
                   </div>
 
                   <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                    <span className="font-mono text-sm font-black text-rose-600 dark:text-rose-400">
-                      {item.price.toFixed(3)} {t.currency}
+                    <span className="font-mono text-sm font-black text-slate-900 dark:text-white">
+                      {item.price.toFixed(3)} <span className="text-xs text-amber-500">{t.currency}</span>
                     </span>
-                    <button className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 group-hover:bg-rose-600 group-hover:text-white flex items-center justify-center transition-colors">
+                    <button className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-amber-500 group-hover:text-slate-950 flex items-center justify-center transition-colors">
                       <IconPlus className="w-4 h-4" />
                     </button>
                   </div>
@@ -342,28 +427,31 @@ export function CloudPosTerminal() {
           </div>
         </div>
 
-        {/* Right: Live Cart & Order Builder (35%) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#0c121e] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md p-5 flex flex-col space-y-4 sticky top-24">
+        {/* Right Side: Professional POS Order Docket & Financial Summary */}
+        <div className="lg:col-span-4 bg-white dark:bg-[#121722] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl p-5 flex flex-col space-y-4 sticky top-20">
           
-          {/* Cart Header */}
+          {/* Ticket Header Bar */}
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <span>{t.currentOrderTitle}</span>
                 {orderType === 'DINE_IN' && selectedTableNumber && (
-                  <span className="text-xs px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-bold">
-                    {t.tableTag} {selectedTableNumber}
+                  <span className="text-xs px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-bold">
+                    T-{selectedTableNumber}
                   </span>
                 )}
               </h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 font-mono">
                 {state.activeCart.length} {t.itemsInCart}
               </p>
             </div>
 
             {state.activeCart.length > 0 && (
               <button
-                onClick={clearCart}
+                onClick={() => {
+                  soundFx.playClick();
+                  clearCart();
+                }}
                 className="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1"
                 title={t.clearCartBtn}
               >
@@ -374,7 +462,7 @@ export function CloudPosTerminal() {
           </div>
 
           {/* Cart Items List */}
-          <div className="space-y-3 max-h-[300px] overflow-y-auto pe-1">
+          <div className="space-y-2.5 max-h-[320px] overflow-y-auto pe-1">
             {state.activeCart.length === 0 ? (
               <div className="py-12 text-center text-slate-400 space-y-2">
                 <IconPos className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
@@ -385,7 +473,7 @@ export function CloudPosTerminal() {
               state.activeCart.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2"
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 space-y-2"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -393,17 +481,17 @@ export function CloudPosTerminal() {
                         {item.name}
                       </h4>
                       {item.selectedVariant && (
-                        <span className="text-[10px] text-rose-600 font-bold block">
-                          {item.selectedVariant.name}
+                        <span className="text-[10px] text-amber-500 font-bold block">
+                          • {item.selectedVariant.name}
                         </span>
                       )}
                       {item.selectedModifiers && item.selectedModifiers.length > 0 && (
-                        <span className="text-[10px] text-slate-500 block">
+                        <span className="text-[10px] text-slate-400 block">
                           + {item.selectedModifiers.map(m => m.name).join(', ')}
                         </span>
                       )}
                       {item.specialNotes && (
-                        <span className="text-[10px] text-amber-600 block italic">
+                        <span className="text-[10px] text-amber-500 italic block">
                           {item.specialNotes}
                         </span>
                       )}
@@ -420,8 +508,11 @@ export function CloudPosTerminal() {
                     </span>
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-2 py-0.5">
                       <button
-                        onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                        className="text-slate-500 hover:text-rose-600 font-bold text-xs"
+                        onClick={() => {
+                          soundFx.playClick();
+                          updateCartItemQuantity(item.id, item.quantity - 1);
+                        }}
+                        className="text-slate-400 hover:text-rose-500 font-bold text-xs"
                       >
                         <IconMinus className="w-3.5 h-3.5" />
                       </button>
@@ -429,8 +520,11 @@ export function CloudPosTerminal() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                        className="text-slate-500 hover:text-rose-600 font-bold text-xs"
+                        onClick={() => {
+                          soundFx.playClick();
+                          updateCartItemQuantity(item.id, item.quantity + 1);
+                        }}
+                        className="text-slate-400 hover:text-emerald-500 font-bold text-xs"
                       >
                         <IconPlus className="w-3.5 h-3.5" />
                       </button>
@@ -443,8 +537,8 @@ export function CloudPosTerminal() {
 
           {/* Kitchen Notes */}
           {state.activeCart.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 {t.kitchenNotesLabel}
               </label>
               <input
@@ -452,33 +546,14 @@ export function CloudPosTerminal() {
                 placeholder={t.kitchenNotesPlaceholder}
                 value={customerNotes}
                 onChange={(e) => setCustomerNotes(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full px-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
               />
-            </div>
-          )}
-
-          {/* Promo Code Input */}
-          {state.activeCart.length > 0 && (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder={t.promoCodePlaceholder}
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value)}
-                className="flex-1 px-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 uppercase font-mono"
-              />
-              <button
-                onClick={handleApplyPromo}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold hover:bg-slate-900 transition-colors"
-              >
-                {t.applyPromoBtn}
-              </button>
             </div>
           )}
 
           {/* Financial Calculation Summary */}
           {state.activeCart.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+            <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
               <div className="flex justify-between text-slate-500">
                 <span>{t.subtotalHt}</span>
                 <span className="font-mono">{cartSubtotal.toFixed(3)} {t.currency}</span>
@@ -488,14 +563,14 @@ export function CloudPosTerminal() {
                 <span className="font-mono">{taxAmount.toFixed(3)} {t.currency}</span>
               </div>
               {appliedDiscount > 0 && (
-                <div className="flex justify-between text-rose-600 font-bold">
+                <div className="flex justify-between text-rose-500 font-bold">
                   <span>{t.discountApplied}</span>
                   <span className="font-mono">-{appliedDiscount.toFixed(3)} {t.currency}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
                 <span>{t.totalNet}</span>
-                <span className="text-base font-mono text-rose-600 dark:text-rose-400">
+                <span className="font-mono text-amber-500">
                   {totalAmount.toFixed(3)} {t.currency}
                 </span>
               </div>
@@ -506,8 +581,11 @@ export function CloudPosTerminal() {
           {state.activeCart.length > 0 && (
             <div className="space-y-2 pt-1">
               <button
-                onClick={() => setCheckoutModalOpen(true)}
-                className="w-full py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all"
+                onClick={() => {
+                  soundFx.playClick();
+                  setCheckoutModalOpen(true);
+                }}
+                className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all pos-key"
               >
                 <IconReceipt className="w-4 h-4" />
                 <span>{t.payAndPrintBtn} ({totalAmount.toFixed(3)} {t.currency})</span>
@@ -515,12 +593,13 @@ export function CloudPosTerminal() {
 
               <button
                 onClick={() => {
+                  soundFx.playKitchenBell();
                   const ord = submitCartOrder(orderType, selectedTableNumber, customerNotes, 'CASH');
                   if (ord) {
                     alert(`${t.confirm}: ${ord.ticketNumber}`);
                   }
                 }}
-                className="w-full py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                className="w-full py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors pos-key"
               >
                 <IconKitchen className="w-4 h-4" />
                 <span>{t.sendKdsOnlyBtn}</span>
@@ -532,8 +611,8 @@ export function CloudPosTerminal() {
 
       {/* Item Customization Dialog */}
       {customizingItem && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#121722] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
@@ -549,20 +628,23 @@ export function CloudPosTerminal() {
               </button>
             </div>
 
-            {/* Variants / Sizes Selection */}
+            {/* Sizes */}
             {customizingItem.variants && customizingItem.variants.length > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   {t.chooseSize}
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {customizingItem.variants.map((v) => (
                     <button
                       key={v.id}
-                      onClick={() => setChosenVariant(v)}
-                      className={`p-3 rounded-xl border text-center transition-all ${
+                      onClick={() => {
+                        soundFx.playClick();
+                        setChosenVariant(v);
+                      }}
+                      className={`p-3 rounded-xl border text-center transition-all pos-key ${
                         chosenVariant?.id === v.id
-                          ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-bold'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-500 font-bold'
                           : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                       }`}
                     >
@@ -574,7 +656,7 @@ export function CloudPosTerminal() {
               </div>
             )}
 
-            {/* Modifiers / Addons Selection */}
+            {/* Addons */}
             {customizingItem.availableModifiers && customizingItem.availableModifiers.length > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -587,9 +669,9 @@ export function CloudPosTerminal() {
                       <button
                         key={mod.id}
                         onClick={() => toggleModifier(mod)}
-                        className={`p-2.5 rounded-xl border text-start flex items-center justify-between text-xs transition-all ${
+                        className={`p-2.5 rounded-xl border text-start flex items-center justify-between text-xs transition-all pos-key ${
                           isSelected
-                            ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-bold'
+                            ? 'border-amber-500 bg-amber-500/10 text-amber-500 font-bold'
                             : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
@@ -602,7 +684,7 @@ export function CloudPosTerminal() {
               </div>
             )}
 
-            {/* Custom Chef Note */}
+            {/* Note */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 {t.chefNoteLabel}
@@ -616,7 +698,7 @@ export function CloudPosTerminal() {
               />
             </div>
 
-            {/* Dialog Footer */}
+            {/* Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setCustomizingItem(null)}
@@ -626,7 +708,7 @@ export function CloudPosTerminal() {
               </button>
               <button
                 onClick={handleConfirmCustomization}
-                className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-600/30"
+                className="px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 pos-key"
               >
                 {t.addToOrderBtn}
               </button>
@@ -635,17 +717,17 @@ export function CloudPosTerminal() {
         </div>
       )}
 
-      {/* Checkout / Payment Method Modal */}
+      {/* Tactile Hardware Checkout & Numpad Modal */}
       {checkoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
-            <div className="flex items-start justify-between">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#121722] rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5">
+            <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
                   {t.paymentModalTitle}
                 </h3>
-                <p className="text-xs text-slate-400">
-                  {t.amountDue} <strong className="text-rose-600 font-mono text-sm">{totalAmount.toFixed(3)} {t.currency}</strong>
+                <p className="text-xs text-slate-400 font-mono">
+                  {t.amountDue} <strong className="text-amber-500 text-base">{totalAmount.toFixed(3)} {t.currency}</strong>
                 </p>
               </div>
               <button
@@ -656,54 +738,97 @@ export function CloudPosTerminal() {
               </button>
             </div>
 
-            {/* Payment Method Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {t.paymentMethod}
-              </label>
+            {/* Payment Method Tabs */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleCompletePayment('CASH')}
+                className="p-3 rounded-2xl border border-amber-500 bg-amber-500/10 text-amber-500 text-center font-bold text-xs pos-key"
+              >
+                <div className="text-lg mb-1">💵</div>
+                <div>{t.payCash}</div>
+              </button>
+              <button
+                onClick={() => handleCompletePayment('CARD')}
+                className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 bg-slate-50 dark:bg-slate-900 text-center font-bold text-xs pos-key"
+              >
+                <div className="text-lg mb-1">💳</div>
+                <div>{t.payCard}</div>
+              </button>
+              <button
+                onClick={() => handleCompletePayment('DELIVERY_APP')}
+                className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500 bg-slate-50 dark:bg-slate-900 text-center font-bold text-xs pos-key"
+              >
+                <div className="text-lg mb-1">🛵</div>
+                <div>{t.payDeliveryApp}</div>
+              </button>
+            </div>
+
+            {/* Hardware Cash Numpad with Bill Presets */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800">
+              
+              {/* Display & Quick Tender */}
+              <div className="space-y-3 flex flex-col justify-between">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    {t.cashReceived}
+                  </label>
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono text-xl font-black text-end text-slate-900 dark:text-white">
+                    {cashTenderedStr || '0.000'} <span className="text-xs text-amber-500">{t.currency}</span>
+                  </div>
+                </div>
+
+                {/* Change Due Display */}
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                  <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                    {t.changeDue}
+                  </div>
+                  <div className="text-xl font-mono font-black text-emerald-500 text-end">
+                    {changeDue.toFixed(3)} {t.currency}
+                  </div>
+                </div>
+
+                {/* Quick Bills buttons */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['+10', '+20', '+50', 'EXACT'].map((bill) => (
+                    <button
+                      key={bill}
+                      onClick={() => handleNumpadKey(bill)}
+                      className="py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold text-xs pos-key hover:border-amber-500"
+                    >
+                      {bill === 'EXACT' ? 'Exact' : `${bill} DT`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Physical Keypad Grid */}
               <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleCompletePayment('CASH')}
-                  className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-rose-600 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
-                >
-                  <div className="text-base mb-1">💵</div>
-                  <div>{t.payCash}</div>
-                </button>
-                <button
-                  onClick={() => handleCompletePayment('CARD')}
-                  className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-rose-600 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
-                >
-                  <div className="text-base mb-1">💳</div>
-                  <div>{t.payCard}</div>
-                </button>
-                <button
-                  onClick={() => handleCompletePayment('DELIVERY_APP')}
-                  className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-rose-600 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
-                >
-                  <div className="text-base mb-1">🛵</div>
-                  <div>{t.payDeliveryApp}</div>
-                </button>
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => handleNumpadKey(k)}
+                    className={`py-3 rounded-xl font-mono text-sm font-bold pos-key transition-all ${
+                      k === 'C'
+                        ? 'bg-rose-500/20 text-rose-500 hover:bg-rose-500/30'
+                        : k === '⌫'
+                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
+                    }`}
+                  >
+                    {k}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Quick Cash Calculator */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="flex justify-between text-xs">
-                <span>{t.cashReceived}</span>
-                <input
-                  type="number"
-                  value={cashReceived}
-                  onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
-                  className="w-24 px-2 py-1 rounded bg-white dark:bg-slate-900 border text-end font-mono font-bold"
-                />
-              </div>
-              <div className="flex justify-between text-xs font-bold text-emerald-600">
-                <span>{t.changeDue}</span>
-                <span className="font-mono">
-                  {Math.max(0, cashReceived - totalAmount).toFixed(3)} {t.currency}
-                </span>
-              </div>
-            </div>
+            {/* Confirm Payment Button */}
+            <button
+              onClick={() => handleCompletePayment('CASH')}
+              className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 pos-key"
+            >
+              <IconCheckCircle className="w-5 h-5" />
+              <span>تأكيد استلام النقدية وإصدار الفاتورة ({totalAmount.toFixed(3)} {t.currency})</span>
+            </button>
           </div>
         </div>
       )}

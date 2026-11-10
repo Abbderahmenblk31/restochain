@@ -2,41 +2,46 @@
 
 @layer base {
   :root {
-    --background: 250 250 252;
-    --foreground: 15 23 42;
-    --card: 255 255 255;
-    --card-foreground: 15 23 42;
-    --border: 226 232 240;
-    --primary: 225 29 72; /* Rose 600 - Premium Hospitality Crimson */
-    --primary-foreground: 255 255 255;
+    --bg-main: 247 248 250;
+    --card-surface: 255 255 255;
+    --text-primary: 15 20 30;
+    --text-muted: 100 116 139;
+    --border-subtle: 226 232 240;
+    --accent-culinary: 217 119 6; /* Warm amber / saffron */
+    --accent-crimson: 190 24 93;
+    --accent-mint: 16 185 129;
   }
 
   .dark {
-    --background: 11 15 25; /* Midnight slate */
-    --foreground: 241 245 249;
-    --card: 17 24 39;
-    --card-foreground: 241 245 249;
-    --border: 30 41 59;
-    --primary: 244 63 94;
-    --primary-foreground: 255 255 255;
+    --bg-main: 11 14 20; /* Deep obsidian */
+    --card-surface: 18 23 34; /* Dark graphite */
+    --text-primary: 243 244 246;
+    --text-muted: 148 163 184;
+    --border-subtle: 33 41 57;
+    --accent-culinary: 245 158 11;
+    --accent-crimson: 244 63 94;
+    --accent-mint: 52 211 153;
   }
 }
 
 * {
-  border-color: var(--border);
+  box-sizing: border-box;
 }
 
 body {
-  font-family: 'Tajawal', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  background-color: rgb(var(--background));
-  color: rgb(var(--foreground));
+  font-family: 'Plus Jakarta Sans', 'Tajawal', system-ui, -apple-system, sans-serif;
+  background-color: rgb(var(--bg-main));
+  color: rgb(var(--text-primary));
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variant-numeric: tabular-nums;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -44,12 +49,47 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.6);
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* Hardware-style tactile button feel */
+.pos-key {
+  transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pos-key:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Serrated thermal receipt paper edge simulation */
+.receipt-paper {
+  background-color: #ffffff;
+  color: #111827;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
+  position: relative;
+}
+
+.receipt-zigzag-bottom {
+  background: linear-gradient(135deg, #ffffff 5px, transparent 0),
+              linear-gradient(-135deg, #ffffff 5px, transparent 0);
+  background-size: 10px 10px;
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  height: 10px;
+  width: 100%;
+}
+
+/* Kitchen docket hanging rail */
+.kds-rail {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 /* Print styles for thermal POS receipt */
@@ -66,8 +106,8 @@ body {
     top: 0;
     width: 80mm;
     margin: 0;
-    padding: 10px;
-    background: white;
-    color: black;
+    padding: 8px;
+    background: white !important;
+    color: black !important;
   }
 }

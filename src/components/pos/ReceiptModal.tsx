@@ -1,8 +1,8 @@
 'use client';
 
 // =============================================================================
-// RestoChain OS - Official Thermal POS Receipt Generator
-// 80mm standard width, fiscal compliance QR & Barcode, Tri-Lingual (AR / FR / EN)
+// RestoChain OS - Authentic Thermal POS Paper Receipt Generator
+// Serrated zigzag paper cut, high-contrast thermal font & fiscal QR code compliance
 // =============================================================================
 
 import React from 'react';
@@ -26,64 +26,64 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
   const branchName = locale === 'ar' ? branch.name : branch.nameFr || branch.name;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-slate-900 rounded-3xl max-w-md w-full shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
         
-        {/* Header Modal Bar */}
-        <div className="p-4 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        {/* Top Modal Navigation */}
+        <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+            <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
               <IconCheckCircle className="w-4 h-4" />
             </span>
-            <span className="text-sm font-bold text-slate-900 dark:text-white">
+            <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
               {t.receiptFiscalTitle}
             </span>
           </div>
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold px-2"
+            className="text-slate-400 hover:text-white text-lg font-bold px-2"
           >
             ✕
           </button>
         </div>
 
-        {/* Printable Thermal Receipt Container (80mm preview) */}
-        <div className="p-6 overflow-y-auto flex justify-center bg-slate-200 dark:bg-slate-950">
+        {/* Realistic Thermal Paper Container with serrated cut edge */}
+        <div className="p-6 overflow-y-auto flex justify-center bg-slate-950">
           <div
             id="thermal-receipt"
-            className="w-[320px] bg-white text-slate-950 p-6 rounded-xl shadow-lg border border-slate-300 font-mono text-xs leading-relaxed"
+            className="w-[320px] receipt-paper p-6 font-mono text-[11px] leading-relaxed select-text shadow-2xl"
           >
             {/* Store Brand */}
-            <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-400">
-              <h2 className="text-base font-black tracking-wider uppercase">RESTOCHAIN OS</h2>
-              <p className="text-[11px] font-bold">{branchName}</p>
+            <div className="text-center space-y-1 pb-4 border-b border-dashed border-slate-400">
+              <h2 className="text-lg font-black tracking-widest uppercase">RESTOCHAIN OS</h2>
+              <p className="text-xs font-bold uppercase">{branchName}</p>
               <p className="text-[10px] text-slate-600">{branch.address}</p>
               <p className="text-[10px] text-slate-600">Tel: {branch.phone}</p>
-              <p className="text-[9px] text-slate-500">MF: 1829471/B/A/M/000</p>
+              <p className="text-[9px] text-slate-500 font-bold">MF: 1829471/B/A/M/000</p>
             </div>
 
-            {/* Ticket Info */}
-            <div className="py-2.5 border-b border-dashed border-slate-400 space-y-1 text-[11px]">
+            {/* Ticket Metadata */}
+            <div className="py-3 border-b border-dashed border-slate-400 space-y-1 text-[11px]">
               <div className="flex justify-between">
                 <span>{t.receiptTicketNo}</span>
-                <span className="font-bold">{order.ticketNumber}</span>
+                <span className="font-black text-sm">{order.ticketNumber}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-slate-600">
                 <span>{t.receiptDateTime}</span>
-                <span>{new Date(order.createdAt).toLocaleString(locale === 'ar' ? 'fr-TN' : locale === 'fr' ? 'fr-FR' : 'en-US', { hour12: false })}</span>
+                <span>{new Date(order.createdAt).toLocaleString(locale === 'ar' ? 'fr-TN' : 'fr-FR', { hour12: false })}</span>
               </div>
               <div className="flex justify-between">
                 <span>{t.receiptType}</span>
                 <span className="font-bold">
                   {order.type === 'DINE_IN'
-                    ? `${t.tableLabel} ${order.tableNumber || '-'}`
+                    ? `Table ${order.tableNumber || '-'}`
                     : order.type === 'TAKEAWAY'
                     ? t.takeaway
                     : t.delivery}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-slate-600">
                 <span>{t.receiptServer}</span>
                 <span>{order.serverName}</span>
               </div>
@@ -91,7 +91,7 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
 
             {/* Items Table */}
             <div className="py-3 border-b border-dashed border-slate-400">
-              <div className="flex justify-between font-bold text-[10px] uppercase text-slate-500 pb-1">
+              <div className="flex justify-between font-black text-[10px] uppercase text-slate-500 pb-1">
                 <span>{t.receiptItem}</span>
                 <span className="text-center">{t.receiptQty}</span>
                 <span className="text-end">{t.receiptTotal}</span>
@@ -106,12 +106,12 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
                       <span className="text-end font-mono">{(item.unitPrice * item.quantity).toFixed(3)}</span>
                     </div>
                     {item.selectedVariant && (
-                      <div className="text-[10px] text-slate-500 ps-2">
+                      <div className="text-[10px] text-slate-600 ps-2">
                         • {item.selectedVariant.name}
                       </div>
                     )}
                     {item.selectedModifiers && item.selectedModifiers.length > 0 && (
-                      <div className="text-[10px] text-slate-500 ps-2">
+                      <div className="text-[10px] text-slate-600 ps-2">
                         {item.selectedModifiers.map(m => `+ ${m.name}`).join(', ')}
                       </div>
                     )}
@@ -131,16 +131,16 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
                 <span>{order.taxAmount.toFixed(3)} {t.currency}</span>
               </div>
               {order.discountAmount > 0 && (
-                <div className="flex justify-between text-rose-600">
+                <div className="flex justify-between text-rose-600 font-bold">
                   <span>{t.discountApplied}</span>
                   <span>-{order.discountAmount.toFixed(3)} {t.currency}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-black pt-1 border-t border-slate-300">
+              <div className="flex justify-between text-base font-black pt-2 border-t border-slate-800">
                 <span>{t.receiptNetTotal}</span>
-                <span className="text-base font-mono">{order.totalAmount.toFixed(3)} {t.currency}</span>
+                <span className="text-lg font-mono font-black">{order.totalAmount.toFixed(3)} {t.currency}</span>
               </div>
-              <div className="flex justify-between text-[10px] text-slate-500 pt-1">
+              <div className="flex justify-between text-[10px] text-slate-600 pt-1">
                 <span>{t.receiptPayMethod}</span>
                 <span className="font-bold">
                   {order.paymentMethod === 'CASH'
@@ -155,7 +155,7 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
             {/* Electronic Compliance QR Simulation */}
             <div className="pt-4 text-center space-y-2">
               <div className="flex justify-center">
-                <div className="p-2 border border-slate-300 rounded bg-white">
+                <div className="p-2 border border-slate-400 rounded bg-white">
                   <svg className="w-20 h-20" viewBox="0 0 100 100" fill="currentColor">
                     <rect x="0" y="0" width="30" height="30" fill="#000" />
                     <rect x="5" y="5" width="20" height="20" fill="#fff" />
@@ -175,26 +175,29 @@ export function ReceiptModal({ order, branch, onClose }: ReceiptModalProps) {
                   </svg>
                 </div>
               </div>
-              <p className="text-[9px] text-slate-500 uppercase">
+              <p className="text-[9px] text-slate-500 uppercase tracking-widest">
                 {t.receiptFiscalNotice}
               </p>
-              <p className="text-[10px] font-bold">{t.receiptThankYou}</p>
+              <p className="text-[10px] font-black uppercase">{t.receiptThankYou}</p>
             </div>
+
+            {/* Serrated zigzag edge */}
+            <div className="receipt-zigzag-bottom mt-4"></div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+        <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-mono font-bold text-slate-400 hover:text-white"
           >
             {t.close}
           </button>
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md shadow-rose-600/30 transition-all"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 pos-key"
           >
             <IconPrinter className="w-4 h-4" />
             <span>{t.receiptPrintBtn}</span>
